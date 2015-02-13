@@ -74,6 +74,9 @@ grunt
 grunt test
 ```
 
+### Build
+[![Build Status](https://travis-ci.org/yahoo/context-parser.svg?branch=master)](https://travis-ci.org/yahoo/context-parser)
+
 ## API Documentations
 
 Check out /docs for the detailed usage.
