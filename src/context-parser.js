@@ -7,7 +7,8 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
          Albert Yu <albertyu@yahoo-inc.com>
          Adonis Fung <adon@yahoo-inc.com>
 */
-/*jshint -W083 */
+(function() {
+"use strict";
 
 var debug = require('debug')('context-parser');
 var trace = require('debug')('context-parser-trace');
@@ -495,3 +496,5 @@ module.exports = {
     Parser: Parser,
     StateMachine: stateMachine
 };
+
+})();
