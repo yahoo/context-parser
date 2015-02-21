@@ -56,6 +56,8 @@ Debug.enable(progname);
 
     if (noofargs === 3) {
         if (fs.existsSync(file)) {
+            var data = fs.readFileSync(file, 'utf-8');
+            parser.contextualize(data, data.length);            
             parser.printCharWithState();
             process.exit(0);
         } else {
