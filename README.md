@@ -1,12 +1,12 @@
 HTML5 Context Parser 
 ====================
 
-HTML5 Context Parser - a fast and small footprint HTML5 context parser! It parse the HTML 5 web page and analyze the execution context of each character for you!
+HTML5 Context Parser - a fast and small footprint HTML5 context parser! It parses the HTML 5 web page and analyzes the execution context of each character for you!
 
 ## Overview
 
 - *Execution Context:* This is the important concept for the browser in which to determine what kind of parsers, like URI, CSS and JavaScript to be applied on the character (i.e. context) in the HTML5 web page.
-- *Cross Site Scripting* In order to defense against XSS, input validation/filtering is the right way to do. However, the correct filtering rules depends on the execution context of the HTML5 page, and developers always pick the wrong filter as it is far more complex than we expect! This context parser is a fast and small footprint HTML5 context parser to analyze the execution context of the HTML5 page.
+- *Cross Site Scripting* In order to defend against XSS, input validation/filtering is the right way to do. However, the correct filtering rules depends on the execution context of the HTML5 page, and developers always pick the wrong filter as it is far more complex than we expect! This context parser is a fast and small footprint HTML5 context parser to analyze the execution context of the HTML5 page.
 
 ## Designs
 
