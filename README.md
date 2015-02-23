@@ -66,12 +66,12 @@ For the execution context number and character type, please refer to the state n
 ### How to build
 ```
 npm install
-grunt
+npm run-script build
 ```
 
 ### How to test
 ```
-grunt test
+npm test
 ```
 
 ### Build
