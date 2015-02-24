@@ -19,13 +19,13 @@ The other way to solve XSS is to apply the filtering at the time the output is r
 
 ### Secure
 
-Parser need to be aligning with browser specification, as in http://www.w3.org/TR/html5/, in order to determine context accurately. One single parsing mistake would result in security exploit. 
+Parser need to be aligning with browser [specification](http://www.w3.org/TR/html5/), in order to determine context accurately. One single parsing mistake would result in security exploit. 
 
 ### Keep It Simple and Straightforward
 
 Keeping code simple and straightforward allows easier code review. Moreover, that would allow smaller compilation time (or JS code loading time in browser client side). 
 
-Since we are only interested in analyzing the execution context of the HTML5 page, we focused on the tokenization process (http://www.w3.org/TR/html5/syntax.html#tokenization) and dropped other parts that are not related to context parsing logics.
+Since we are only interested in analyzing the execution context of the HTML5 page, we focused on the [tokenization process](http://www.w3.org/TR/html5/syntax.html#tokenization) and dropped other parts that are not related to context parsing logics.
 
 
 ## Quick Start
