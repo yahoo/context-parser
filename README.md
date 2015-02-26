@@ -99,6 +99,6 @@ See the [LICENSE file][] for license text and copyright information.
 
 ## Related Works
 
-* [parse5](https://github.com/inikulin/parse5) is an HTML5 compliant parser implemented in native javascript. It is used by [jsdom](https://github.com/tmpvar/jsdom) as the underlying HTML parsing engine. Parse5 has a larger code base and it exposes the parsing tree instead of execution context thus it may require some patching or trimming in order provide context parsing functionality. 
+* [parse5](https://github.com/inikulin/parse5) is an HTML5 compliant parser implemented in native javascript. It is used by [jsdom](https://github.com/tmpvar/jsdom) as the underlying HTML parsing engine. Parse5 has a larger code base and it exposes the parsing tree instead of execution context thus it may require some patching or trimming in order to provide context parsing functionality. 
 
 * [htmlparser2](https://github.com/fb55/htmlparser2) is another HTML parser implemented in native javascript. It is used by [cheerio](https://github.com/cheeriojs/cheerio) as the underlying HTML parsing engine. HTMLparser2 is not a fully compliant parser thus it is less desirable to be used for application security related work.
