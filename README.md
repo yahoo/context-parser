@@ -67,7 +67,7 @@ Run against the HTML5 file with our parser and the state defined in [HTML 5 Spec
 ...
 ```
 
-The  reports back the execution context of each character in the format explained below.
+It reports back the execution context of each character in the format explained below.
 ```
 {ch: <Character>, state: <Execution Context Number>, symbol: <Symbol Type>}
 ```
