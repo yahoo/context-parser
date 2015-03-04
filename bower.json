@@ -1,0 +1,26 @@
+{
+  "name": "context-parser",
+  "version": "1.0.0",
+  "homepage": "https://github.com/yahoo/context-parser",
+  "description": "HTML5 Context Parser",
+  "main": "src/context-parser.js",
+  "keywords": [
+    "context",
+    "parser",
+    "html5"
+  ],
+  "authors": [
+    "Nera Liu <neraliu@yahoo-inc.com>",
+    "Adonis Fung <adon@yahoo-inc.com>",
+    "Albert Yu <albertyu@yahoo-inc.com>"
+  ],
+  "license": "BSD",
+  "ignore": [
+    "**/.*",
+    "bin",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
