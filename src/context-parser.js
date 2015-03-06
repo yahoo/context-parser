@@ -19,12 +19,12 @@ var stateMachine = require('./html5-state-machine.js');
  * @constructor Parser
  */
 function Parser() {
-    this.bytes = [];  /* Save the processed bytes */
-    this.state = -1;  /* Save the current status */
-    this.states = [stateMachine.State.STATE_DATA]; /* Save the processed status */
-    this.contexts = [];
-    this.buffer = []; /* Save the processed character into the internal buffer */
-    this.symbols = []; /* Save the processed symbols */
+    // this.bytes = [];  /* Save the processed bytes */
+    this.state = stateMachine.State.STATE_DATA;  /* Save the current status */
+    // this.states = [stateMachine.State.STATE_DATA]; /* Save the processed status */
+    // this.contexts = [];
+    // this.buffer = []; /* Save the processed character into the internal buffer */
+    // this.symbols = []; /* Save the processed symbols */
     this.tagNames = ['', '']; /* Save the current tag name */
     this.tagNameIdx = '';
     this.attributeName = ''; /* Save the current attribute name */
@@ -44,10 +44,10 @@ function Parser() {
  */
 Parser.prototype.contextualize = function(input) {
     var len = input.length;
-    this.state = this.states[0];
-    this.bytes[0] = '';
-    this.symbols[0] = 0;
-    this.contexts[0] = 0;
+    // this.state = this.states[0];
+    // this.bytes[0] = '';
+    // this.symbols[0] = 0;
+    // this.contexts[0] = 0;
     for(var i = 0; i < len; ++i) {
         i = this.beforeWalk(i, input);
         if ( i >= len ) { break; }
@@ -73,11 +73,11 @@ Parser.prototype.walk = function(i, input) {
         extraLogic = stateMachine.lookupAltLogicFromSymbol[symbol][this.state],
         reconsume = stateMachine.lookupReconsumeFromSymbol[symbol][this.state];
 
-    trace('Enter the walk');
-    trace({i: i, ch: ch, symbol: symbol, state: this.state, extraLogic: extraLogic, reconsume: reconsume });
-    trace({states: this.states});
-    trace({bytes: this.bytes});
-    trace({contexts: this.contexts});
+    // trace('Enter the walk');
+    // trace({i: i, ch: ch, symbol: symbol, state: this.state, extraLogic: extraLogic, reconsume: reconsume });
+    // trace({states: this.states});
+    // trace({bytes: this.bytes});
+    // trace({contexts: this.contexts});
 
     /* Set state based on the current head pointer symbol */
     this.state = stateMachine.lookupStateFromSymbol[symbol][this.state];
@@ -147,10 +147,10 @@ Parser.prototype.walk = function(i, input) {
 
             if ( i + 1 < len && input[i + 1] === '-') {
                 this.state = stateMachine.State.STATE_AS_ONE;
-                this.bytes[i + 1] = ch;
-                this.states[i + 1] = this.state;
-                this.symbols[i + 1] = symbol;
-                this.contexts[i + 1] = stateMachine.Context.OPERATOR;
+                // this.bytes[i + 1] = ch;
+                // this.states[i + 1] = this.state;
+                // this.symbols[i + 1] = symbol;
+                // this.contexts[i + 1] = stateMachine.Context.OPERATOR;
                 ++i;
                 ch = input[i];
                 symbol = this.lookupChar(ch);
@@ -197,15 +197,15 @@ Parser.prototype.walk = function(i, input) {
     }
 
     if (reconsume) {                  /* reconsume the character */
-        trace('Reconsuming...');
-        this.states[i] = this.state;
+        // trace('Reconsuming...');
+        // this.states[i] = this.state;
         return this.walk(i, input);
     }
 
-    this.bytes[i + 1] = ch;
-    this.states[i + 1] = this.state;
-    this.symbols[i + 1] = symbol;
-    this.contexts[i + 1] = this.extractContext(this.states[i], this.states[i + 1]);
+    // this.bytes[i + 1] = ch;
+    // this.states[i + 1] = this.state;
+    // this.symbols[i + 1] = symbol;
+    // this.contexts[i + 1] = this.extractContext(this.states[i], this.states[i + 1]);
 
     return i;
 };
@@ -324,26 +324,46 @@ Parser.prototype.lookupChar = function(ch) {
     // console.log(' - ' + ch + ' - ')
     var o = ch.charCodeAt(0);
 
-    switch(o) {
-        case stateMachine.Char.TAB: return 0;
-        case stateMachine.Char.LF: return 0;
-        case stateMachine.Char.FF: return 0;
-        case stateMachine.Char.SPACE: return 0;
-        case stateMachine.Char.EXCLAMATION: return 1;
-        case stateMachine.Char.DOUBLE_QUOTE: return 2;
-        case stateMachine.Char.AMPERSAND: return 3;
-        case stateMachine.Char.SINGLE_QUOTE: return 4;
-        case stateMachine.Char.DASH: return 5;
-        case stateMachine.Char.SLASH: return 6;
-        case stateMachine.Char.GREATER: return 7;
-        case stateMachine.Char.EQUAL: return 8;
-        case stateMachine.Char.LESS: return 9;
-        case stateMachine.Char.QUESTION: return 10;
-        default:
-            if( o >= stateMachine.Char.SMALL_A && o <= stateMachine.Char.SMALL_Z ) { return 11; }
-            if( o >= stateMachine.Char.CAPTIAL_A && o <= stateMachine.Char.CAPTIAL_Z ) { return 11; }
-        return 12;
-    }
+    if( o >= stateMachine.Char.SMALL_A && o <= stateMachine.Char.SMALL_Z ) { return 11; }
+    if( o >= stateMachine.Char.CAPTIAL_A && o <= stateMachine.Char.CAPTIAL_Z ) { return 11; }
+
+    if( o ===  stateMachine.Char.TAB) { return 0; } 
+    if( o ===  stateMachine.Char.LF) { return 0; } 
+    if( o ===  stateMachine.Char.FF) { return 0; } 
+    if( o ===  stateMachine.Char.SPACE) { return 0; } 
+    if( o ===  stateMachine.Char.EXCLAMATION) { return 1; } 
+    if( o ===  stateMachine.Char.DOUBLE_QUOTE) { return 2; } 
+    if( o ===  stateMachine.Char.AMPERSAND) { return 3; } 
+    if( o ===  stateMachine.Char.SINGLE_QUOTE) { return 4; } 
+    if( o ===  stateMachine.Char.DASH) { return 5; } 
+    if( o ===  stateMachine.Char.SLASH) { return 6; } 
+    if( o ===  stateMachine.Char.GREATER) { return 7; } 
+    if( o ===  stateMachine.Char.EQUAL) { return 8; } 
+    if( o ===  stateMachine.Char.LESS) { return 9; } 
+    if( o ===  stateMachine.Char.QUESTION) { return 10; } 
+
+    return 12;
+    
+    // switch(o) {
+    //     case stateMachine.Char.TAB: return 0;
+    //     case stateMachine.Char.LF: return 0;
+    //     case stateMachine.Char.FF: return 0;
+    //     case stateMachine.Char.SPACE: return 0;
+    //     case stateMachine.Char.EXCLAMATION: return 1;
+    //     case stateMachine.Char.DOUBLE_QUOTE: return 2;
+    //     case stateMachine.Char.AMPERSAND: return 3;
+    //     case stateMachine.Char.SINGLE_QUOTE: return 4;
+    //     case stateMachine.Char.DASH: return 5;
+    //     case stateMachine.Char.SLASH: return 6;
+    //     case stateMachine.Char.GREATER: return 7;
+    //     case stateMachine.Char.EQUAL: return 8;
+    //     case stateMachine.Char.LESS: return 9;
+    //     case stateMachine.Char.QUESTION: return 10;
+    //     default:
+    //         if( o >= stateMachine.Char.SMALL_A && o <= stateMachine.Char.SMALL_Z ) { return 11; }
+    //         if( o >= stateMachine.Char.CAPTIAL_A && o <= stateMachine.Char.CAPTIAL_Z ) { return 11; }
+    //     return 12;
+    // }
 };
 
 /**
@@ -359,7 +379,7 @@ Parser.prototype.lookupChar = function(ch) {
  *
  */
 Parser.prototype.beforeWalk = function( i, input ) {
-    debug('in html5 token beforeWalk');
+    // debug('in html5 token beforeWalk');
     return i;
 };
 
@@ -374,7 +394,7 @@ Parser.prototype.beforeWalk = function( i, input ) {
  *
  */
 Parser.prototype.afterWalk = function( ch, i ) {
-    debug('in html5 token afterWalk');
+    // debug('in html5 token afterWalk');
 };
 
 /**
@@ -452,9 +472,9 @@ Parser.prototype.getLastState = function() {
  * Get the characters from the buffer with _saveToBuffer = true.
  *
  */
-Parser.prototype.getBuffer = function() {
-    return this.bytes;
-};
+// Parser.prototype.getBuffer = function() {
+//     return this.bytes;
+// };
 
 /**
  * @function Parser#getAttributeName

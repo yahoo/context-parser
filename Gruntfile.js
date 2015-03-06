@@ -14,6 +14,11 @@ module.exports = function(grunt) {
         camelcase: true
       }
     },
+    benchmark: {
+      all: {
+        src: ['tests/benchmarks/simplehtml.js'],
+      }
+    },
     browserify: {
       standalone: {
         src: [ 'src/<%= pkg.name %>.js' ],
@@ -43,10 +48,11 @@ module.exports = function(grunt) {
     }
   });
 
-  grunt.loadNpmTasks('grunt-mocha-istanbul');
+  grunt.loadNpmTasks('grunt-benchmark');
   grunt.loadNpmTasks('grunt-browserify');
-  grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-clean');
+  grunt.loadNpmTasks('grunt-contrib-jshint');
+  grunt.loadNpmTasks('grunt-mocha-istanbul');
 
   grunt.registerTask('test', ['clean:buildResidues', 'jshint', 'mocha_istanbul']);
   grunt.registerTask('dist', ['browserify'])
