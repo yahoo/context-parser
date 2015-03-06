@@ -99,10 +99,10 @@ Parser.prototype.walk = function(i, input) {
             this.tagNameIdx = 1;
             this.tagNames[1] = '';
             break;
-        case 5:                       /* new end tag token */
-            this.tagNameIdx = 1;
-            this.tagNames[1] = ch.toLowerCase();
-            break;
+        // case 5:                       /* new end tag token */
+        //     this.tagNameIdx = 1;
+        //     this.tagNames[1] = ch.toLowerCase();
+        //     break;
         case 6:                       /* match end tag token with start tag token's tag name */
             if(this.tagNames[0] === this.tagNames[1]) {
                 /* Extra Logic #6 :
@@ -129,17 +129,17 @@ Parser.prototype.walk = function(i, input) {
                 }
             }
             break;
-        case 7:                       /* append to the current end tag token */
-            this.tagNameIdx = 1;
-            this.tagNames[1] += ch.toLowerCase();
-            break;
+        // case 7:                       /* append to the current end tag token */
+        //     this.tagNameIdx = 1;
+        //     this.tagNames[1] += ch.toLowerCase();
+        //     break;
         case 8:                       /* switch to the script data double escaped state if we see <script> inside <script><!-- */
             if ( this.tagNames[1] === 'script') {
                 this.state = stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPED;
             }
             break;
-        case 9:                       /* Not implemented: attribute value special logic that never get used */
-            break;
+        // case 9:                       /* Not implemented: attribute value special logic that never get used */
+        //    break;
 
         // CASE 10 is obsoleted.
         // case 10:                      /* the case for <!-- */
