@@ -17,12 +17,11 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         it("Running benchmark test", function(done) {
             var exec = require('child_process').exec,
                 child;
-            var file  = "./tests/samples/tests/001.html";
-                child = exec('./bin/benchmark '+file,
+            var child = exec('./bin/benchmark',
                     function (error, stdout, stderr) {
                         if (error === null) {
                             expect(true).to.equal(true);
-                            expect(stdout).to.match(/^Total 1 files, 818 chars/);
+                            expect(stdout).to.match(/^context-parser runs at a speed of/);
                         }
                     }
                 );
@@ -35,7 +34,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             var exec = require('child_process').exec,
                 child;
             var file  = "./tests/samples/tests/001.html";
-                child = exec('./bin/contextparse '+file,
+                child = exec('./bin/context-dump '+file,
                     function (error, stdout, stderr) {
                         if (error === null) {
                             expect(true).to.equal(true);

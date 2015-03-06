@@ -53,7 +53,7 @@ Parser.prototype.contextualize = function(input) {
         if ( i >= len ) { break; }
         i = this.walk(i, input);
         if ( i >= len ) { break; }
-        this.afterWalk(input[i]);
+        this.afterWalk(input[i], i);
     }
 };
 
@@ -140,24 +140,26 @@ Parser.prototype.walk = function(i, input) {
             break;
         case 9:                       /* Not implemented: attribute value special logic that never get used */
             break;
-        case 10:                      /* the case for <!-- */
 
-            // TODO - should introduce a new state instead of looking at input i+1.
-            // 12.2.4.45 Markup declaration open state
+        // CASE 10 is obsoleted.
+        // case 10:                      /* the case for <!-- */
 
-            if ( i + 1 < len && input[i + 1] === '-') {
-                this.state = stateMachine.State.STATE_AS_ONE;
-                // this.bytes[i + 1] = ch;
-                // this.states[i + 1] = this.state;
-                // this.symbols[i + 1] = symbol;
-                // this.contexts[i + 1] = stateMachine.Context.OPERATOR;
-                ++i;
-                ch = input[i];
-                symbol = this.lookupChar(ch);
-                this.state = stateMachine.State.STATE_COMMENT_START;
-                this.afterWalk(ch);
-            }
-            break;
+        //     // TODO - should introduce a new state instead of looking at input i+1.
+        //     // 12.2.4.45 Markup declaration open state
+
+        //     if ( i + 1 < len && input[i + 1] === '-') {
+        //         this.state = stateMachine.State.STATE_AS_ONE;
+        //         // this.bytes[i + 1] = ch;
+        //         // this.states[i + 1] = this.state;
+        //         // this.symbols[i + 1] = symbol;
+        //         // this.contexts[i + 1] = stateMachine.Context.OPERATOR;
+        //         ++i;
+        //         ch = input[i];
+        //         symbol = this.lookupChar(ch);
+        //         this.state = stateMachine.State.STATE_COMMENT_START;
+        //         this.afterWalk(ch, i);
+        //     }
+        //     break;
         case 11:                      /* context transition when seeing <sometag> and switch to Script / Rawtext / RCdata / ... */
             switch (this.tagNames[0]) {
                 // TODO - give exceptions when non-HTML namespace is used.
@@ -419,9 +421,9 @@ Parser.prototype.setCurrentState = function(state) {
  * Get the states of the HTML5 page
  *
  */
-Parser.prototype.getStates = function() {
-    return this.states;
-};
+// Parser.prototype.getStates = function() {
+//     return this.states;
+// };
 
 /**
  * @function Parser#setInitState
@@ -432,9 +434,9 @@ Parser.prototype.getStates = function() {
  * Set the init state of HTML5 Context Parser.
  *
  */
-Parser.prototype.setInitState = function(state) {
-    this.states[0] = state;
-};
+// Parser.prototype.setInitState = function(state) {
+//     this.states[0] = state;
+// };
 
 /**
  * @function Parser#getInitState
@@ -445,9 +447,9 @@ Parser.prototype.setInitState = function(state) {
  * Get the init state of HTML5 Context Parser.
  *
  */
-Parser.prototype.getInitState = function() {
-    return this.states[0];
-};
+// Parser.prototype.getInitState = function() {
+//     return this.states[0];
+// };
 
 /**
  * @function Parser#getLastState
@@ -458,10 +460,10 @@ Parser.prototype.getInitState = function() {
  * Get the last state of HTML5 Context Parser.
  *
  */
-Parser.prototype.getLastState = function() {
-    /** undefined if length = 0 */
-    return this.states[ this.states.length - 1 ];
-};
+// Parser.prototype.getLastState = function() {
+//     * undefined if length = 0 
+//     return this.states[ this.states.length - 1 ];
+// };
 
 /**
  * @function Parser#getBuffer

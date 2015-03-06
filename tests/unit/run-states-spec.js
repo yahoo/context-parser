@@ -11,14 +11,29 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
     require("mocha");
     var assert = require("assert"),
-        Parser = require("../../src/context-parser").Parser;
+        FastParser = require("../../src/context-parser").Parser;
+
+    var Parser = function() {
+        FastParser.call(this);
+        this.states = [1];
+    }
+
+    Parser.prototype = Object.create(FastParser.prototype);
+
+    Parser.prototype.afterWalk = function( ch, i ) {
+        this.states[i + 1] = this.state;
+    };
+
+    Parser.prototype.getStates = function( ) {
+        return this.states;
+    }
+
 
     describe('HTML5 Context Parser html5 state test suite', function(){
 
         // https://html.spec.whatwg.org/multipage/syntax.html#tokenization
         it('HTML5 Context Parser <html></html> test', function(){
             var p1 = new Parser();
-
             var html = "<html></html>";
             p1.contextualize(html);
             var states = p1.getStates();
@@ -67,7 +82,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 	    var html = '<a href="javascript:alert(\"1\");">link</a>';
             p1.contextualize(html);
             var states = p1.getStates();
-            assert.equal(states.toString(), '1,8,10,34,35,35,35,35,37,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,34,35,35,35,35,35,1,1,1,1,1,8,9,10,1');
+            assert.equal(states.toString(), '1,8,10,34,35,35,35,35,37,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,42,35,35,35,35,35,1,1,1,1,1,8,9,10,1');
         });
 
         it('HTML5 Context Parser rcdata test (extra logic:6)', function(){
@@ -171,7 +186,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 	    var html = '<!--comment-->';
             p1.contextualize(html);
             var states = p1.getStates();
-            assert.equal(states.toString(), '1,8,45,999,46,48,48,48,48,48,48,48,49,50,1');
+            assert.equal(states.toString(), '1,8,45,53,46,48,48,48,48,48,48,48,49,50,1');
         });
 
         it('HTML5 Context Parser extra logic 11 test', function(){

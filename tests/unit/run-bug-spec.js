@@ -19,11 +19,19 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         it('Don\'t print char twice in reconsume logic test', function(){
             var o = "";
             var file  = "./tests/samples/tests/001.html";
+
+            Parser.prototype.afterWalk = function( ch, i ) {
+                if (!this.bytes) {
+                    this.bytes = [];
+                }
+                this.bytes[i] = ch;
+            };
+
             var parser = new Parser();
 
             var data = fs.readFileSync(file, 'utf-8');
             parser.contextualize(data);
-            o = parser.getBuffer().join('');
+            o = parser.bytes.join('');
 
             expect(o).not.to.match(/sscript/);
             expect(o).not.to.match(/script>>/);

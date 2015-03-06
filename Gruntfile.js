@@ -32,7 +32,7 @@ module.exports = function(grunt) {
     },    
     mocha_istanbul: {
       target: {
-        src: 'tests/unit',
+        src: 'tests/unit/*.js',
         options: {
           coverage:true,
           check: {
