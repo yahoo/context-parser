@@ -16,7 +16,7 @@ var Debug = require("debug"),
 Debug.enable(progname);
 
 (function() {
-    var Parser = require("context-parser").Parser,
+    var Parser = require("../src/context-parser").Parser,
         debug = Debug(progname),
         fs = require('fs'),
         file,

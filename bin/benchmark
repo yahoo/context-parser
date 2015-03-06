@@ -14,7 +14,7 @@ var fs = require('fs');
 var html = fs.readFileSync('tests/samples/tests/1m.html', "utf8");  
 
 var parsers = [
-    ['context-parser', 'Parser', 'contextualize'],
+    ['../src/context-parser', 'Parser', 'contextualize'],
     ['parse5', 'Parser', 'parse'],
     ['gumbo-parser'],
     ['high5', '', 'end'],

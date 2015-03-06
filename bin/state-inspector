@@ -16,8 +16,9 @@ var Debug = require("debug"),
 Debug.enable(progname);
 
 (function() {
-    var Parser = require("context-parser").Parser,
-        StateMachine = require("context-parser").StateMachine,
+    var CP = require("../src/context-parser"),
+        Parser = CP.Parser,
+        StateMachine = CP.StateMachine,
         ch,
         symbol,
         state,
