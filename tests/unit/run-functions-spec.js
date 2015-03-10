@@ -162,6 +162,15 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             assert.equal(r, 12);
         });
 
+        it('HTML5 Context Parser#getStartTagName', function(){
+            var p1 = new Parser();
+            var html = "<div class='classname' style='color:red'></div>";
+            p1.contextualize(html);
+            assert.equal(p1.getStartTagName(), 'div');
+
+        });
+
+        
         it('HTML5 Context Parser#create 2 instances test', function(){
             var p1 = new Object();
             var p2 = p1;

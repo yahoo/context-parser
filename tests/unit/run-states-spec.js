@@ -18,7 +18,6 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         // https://html.spec.whatwg.org/multipage/syntax.html#tokenization
         it('HTML5 Context Parser <html></html> test', function(){
             var p1 = new Parser();
-
             var html = "<html></html>";
             p1.contextualize(html);
             var states = p1.getStates();
@@ -171,7 +170,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 	    var html = '<!--comment-->';
             p1.contextualize(html);
             var states = p1.getStates();
-            assert.equal(states.toString(), '1,8,45,999,46,48,48,48,48,48,48,48,49,50,1');
+            assert.equal(states.toString(), '1,8,45,53,46,48,48,48,48,48,48,48,49,50,1');
         });
 
         it('HTML5 Context Parser extra logic 11 test', function(){
