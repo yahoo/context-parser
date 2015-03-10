@@ -17,41 +17,41 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
     describe('HTML5 Context Parser functions test suite', function(){
 
-        // it('HTML5 Context Parser#getStates test', function(){
-        //     var p1 = new Parser();
-        //     var html = "<html></html>";
-        //     p1.contextualize(html);
-        //     var states = p1.getStates();
-        //     assert.equal(states.toString(), '1,8,10,10,10,10,1,8,9,10,10,10,10,1');
-        // });
+        it('HTML5 Context Parser#getStates test', function(){
+            var p1 = new Parser();
+            var html = "<html></html>";
+            p1.contextualize(html);
+            var states = p1.getStates();
+            assert.equal(states.toString(), '1,8,10,10,10,10,1,8,9,10,10,10,10,1');
+        });
 
         it('HTML5 Context Parser#setCurrentState test (function existence test)', function(){
             var p1 = new Parser();
             p1.setCurrentState(10);
         });
 
-        // it('HTML5 Context Parser#setInitState test', function(){
-        //     var p1 = new Parser();
-        //     p1.setInitState(10);
-        //     var state = p1.getInitState();
-        //     assert.equal(state, 10);
-        // });
+        it('HTML5 Context Parser#setInitState test', function(){
+            var p1 = new Parser();
+            p1.setInitState(10);
+            var state = p1.getInitState();
+            assert.equal(state, 10);
+        });
 
-        // it('HTML5 Context Parser#getInitState test', function(){
-        //     var p1 = new Parser();
-        //     var html = "<html></html>";
-        //     p1.contextualize(html);
-        //     var state = p1.getInitState();
-        //     assert.equal(state, 1);
-        // });
+        it('HTML5 Context Parser#getInitState test', function(){
+            var p1 = new Parser();
+            var html = "<html></html>";
+            p1.contextualize(html);
+            var state = p1.getInitState();
+            assert.equal(state, 1);
+        });
 
-        // it('HTML5 Context Parser#getLastState test', function(){
-        //     var p1 = new Parser();
-        //     var html = "<html></html>";
-        //     p1.contextualize(html);
-        //     var state = p1.getLastState();
-        //     assert.equal(state, 1);
-        // });
+        it('HTML5 Context Parser#getLastState test', function(){
+            var p1 = new Parser();
+            var html = "<html></html>";
+            p1.contextualize(html);
+            var state = p1.getLastState();
+            assert.equal(state, 1);
+        });
 
         it('HTML5 Context Parser#getAttributeName test 1', function(){
             var p1 = new Parser();

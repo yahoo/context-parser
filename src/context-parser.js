@@ -15,16 +15,11 @@ var trace = require('debug')('context-parser-trace');
 var stateMachine = require('./html5-state-machine.js');
 
 /**
- * @class Parser
- * @constructor Parser
+ * @class FastParser
+ * @constructor FastParser
  */
-function Parser() {
-    // this.bytes = [];  /* Save the processed bytes */
+function FastParser() {
     this.state = stateMachine.State.STATE_DATA;  /* Save the current status */
-    // this.states = [stateMachine.State.STATE_DATA]; /* Save the processed status */
-    // this.contexts = [];
-    // this.buffer = []; /* Save the processed character into the internal buffer */
-    // this.symbols = []; /* Save the processed symbols */
     this.tagNames = ['', '']; /* Save the current tag name */
     this.tagNameIdx = '';
     this.attributeName = ''; /* Save the current attribute name */
@@ -32,7 +27,7 @@ function Parser() {
 }
 
 /**
- * @function Parser#contextualize
+ * @function FastParser#contextualize
  *
  * @param {string} input - The byte stream of the HTML5 web page.
  * @returns {integer} The return code of success or failure of parsing.
@@ -42,12 +37,8 @@ function Parser() {
  * the HTML5 WHATWG - https://html.spec.whatwg.org/multipage/</p>
  *
  */
-Parser.prototype.contextualize = function(input) {
+FastParser.prototype.contextualize = function(input) {
     var len = input.length;
-    // this.state = this.states[0];
-    // this.bytes[0] = '';
-    // this.symbols[0] = 0;
-    // this.contexts[0] = 0;
     for(var i = 0; i < len; ++i) {
         i = this.beforeWalk(i, input);
         if ( i >= len ) { break; }
@@ -58,14 +49,14 @@ Parser.prototype.contextualize = function(input) {
 };
 
 /*
- * @function Parser#walk
+ * @function FastParser#walk
  *
  * @param {integer} i - the position of the current character in the input stream
  * @param {string} input - the input stream
  * @returns {integer} the new location of the current character.
  *
  */
-Parser.prototype.walk = function(i, input) {
+FastParser.prototype.walk = function(i, input) {
 
     var ch = input[i],
         len = input.length,
@@ -129,37 +120,13 @@ Parser.prototype.walk = function(i, input) {
                 }
             }
             break;
-        // case 7:                       /* append to the current end tag token */
-        //     this.tagNameIdx = 1;
-        //     this.tagNames[1] += ch.toLowerCase();
-        //     break;
+
         case 8:                       /* switch to the script data double escaped state if we see <script> inside <script><!-- */
             if ( this.tagNames[1] === 'script') {
                 this.state = stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPED;
             }
             break;
-        // case 9:                       /* Not implemented: attribute value special logic that never get used */
-        //    break;
 
-        // CASE 10 is obsoleted.
-        // case 10:                      /* the case for <!-- */
-
-        //     // TODO - should introduce a new state instead of looking at input i+1.
-        //     // 12.2.4.45 Markup declaration open state
-
-        //     if ( i + 1 < len && input[i + 1] === '-') {
-        //         this.state = stateMachine.State.STATE_AS_ONE;
-        //         // this.bytes[i + 1] = ch;
-        //         // this.states[i + 1] = this.state;
-        //         // this.symbols[i + 1] = symbol;
-        //         // this.contexts[i + 1] = stateMachine.Context.OPERATOR;
-        //         ++i;
-        //         ch = input[i];
-        //         symbol = this.lookupChar(ch);
-        //         this.state = stateMachine.State.STATE_COMMENT_START;
-        //         this.afterWalk(ch, i);
-        //     }
-        //     break;
         case 11:                      /* context transition when seeing <sometag> and switch to Script / Rawtext / RCdata / ... */
             switch (this.tagNames[0]) {
                 // TODO - give exceptions when non-HTML namespace is used.
@@ -186,6 +153,7 @@ Parser.prototype.walk = function(i, input) {
                     break;
             }
             break;
+
         case 12:                      /* new attribute name and value token */
             this.attributeValue = '';
             this.attributeName = ch.toLowerCase();
@@ -200,27 +168,24 @@ Parser.prototype.walk = function(i, input) {
 
     if (reconsume) {                  /* reconsume the character */
         // trace('Reconsuming...');
-        // this.states[i] = this.state;
+        if( this.states) {
+            this.states[i] = this.state; // This is buggy. May need to change the way we walk the stream to avoid this.
+        }
         return this.walk(i, input);
     }
-
-    // this.bytes[i + 1] = ch;
-    // this.states[i + 1] = this.state;
-    // this.symbols[i + 1] = symbol;
-    // this.contexts[i + 1] = this.extractContext(this.states[i], this.states[i + 1]);
 
     return i;
 };
 
 /**
- * @function Parser#extractContext
+ * @function FastParser#extractContext
  *
  * @param {integer} before - the state before the selected character
  * @param {integer} after - the state after the selected character
  * @returns {integer} the context of the character.
 
  */
-Parser.prototype.extractContext = function(before, after) {
+FastParser.prototype.extractContext = function(before, after) {
 
     if ( before === after ) {     /* context that are encapsulated by operators. e.g. bar in <foo>bar</far> */
         switch (after) {
@@ -311,7 +276,7 @@ Parser.prototype.extractContext = function(before, after) {
 };
 
 /**
- * @function Parser#lookupChar
+ * @function FastParser#lookupChar
  *
  * @param {char} ch - The character.
  * @returns {integer} The integer to represent the type of input character.
@@ -321,7 +286,7 @@ Parser.prototype.extractContext = function(before, after) {
  * e.g. [A-z] = type 17 (Letter [A-z])</p>
  *
  */
-Parser.prototype.lookupChar = function(ch) {
+FastParser.prototype.lookupChar = function(ch) {
 
     // console.log(' - ' + ch + ' - ')
     var o = ch.charCodeAt(0);
@@ -346,30 +311,10 @@ Parser.prototype.lookupChar = function(ch) {
 
     return 12;
     
-    // switch(o) {
-    //     case stateMachine.Char.TAB: return 0;
-    //     case stateMachine.Char.LF: return 0;
-    //     case stateMachine.Char.FF: return 0;
-    //     case stateMachine.Char.SPACE: return 0;
-    //     case stateMachine.Char.EXCLAMATION: return 1;
-    //     case stateMachine.Char.DOUBLE_QUOTE: return 2;
-    //     case stateMachine.Char.AMPERSAND: return 3;
-    //     case stateMachine.Char.SINGLE_QUOTE: return 4;
-    //     case stateMachine.Char.DASH: return 5;
-    //     case stateMachine.Char.SLASH: return 6;
-    //     case stateMachine.Char.GREATER: return 7;
-    //     case stateMachine.Char.EQUAL: return 8;
-    //     case stateMachine.Char.LESS: return 9;
-    //     case stateMachine.Char.QUESTION: return 10;
-    //     default:
-    //         if( o >= stateMachine.Char.SMALL_A && o <= stateMachine.Char.SMALL_Z ) { return 11; }
-    //         if( o >= stateMachine.Char.CAPTIAL_A && o <= stateMachine.Char.CAPTIAL_Z ) { return 11; }
-    //     return 12;
-    // }
 };
 
 /**
- * @function Parser#beforeWalk
+ * @function FastParser#beforeWalk
  *
  * @param {integer} i - the location of the head pointer.
  * @param {string} input - the input stream
@@ -380,13 +325,13 @@ Parser.prototype.lookupChar = function(ch) {
  * Interface function for subclass to implement logics before parsing the character.
  *
  */
-Parser.prototype.beforeWalk = function( i, input ) {
+FastParser.prototype.beforeWalk = function( i, input ) {
     // debug('in html5 token beforeWalk');
     return i;
 };
 
 /**
- * @function Parser#afterWalk
+ * @function FastParser#afterWalk
  *
  * @param {string} ch - The character consumed.
  * @param {integer} i - the head pointer location of this character
@@ -395,9 +340,32 @@ Parser.prototype.beforeWalk = function( i, input ) {
  * Interface function for subclass to implement logics after parsing the character.
  *
  */
-Parser.prototype.afterWalk = function( ch, i ) {
+FastParser.prototype.afterWalk = function( ch, i ) {
     // debug('in html5 token afterWalk');
 };
+
+
+function Parser () {
+    FastParser.call(this);
+    this.bytes = [];  /* Save the processed bytes */
+    this.states = [stateMachine.State.STATE_DATA]; /* Save the processed status */
+    this.contexts = [];
+    this.buffer = []; /* Save the processed character into the internal buffer */
+    this.symbols = []; /* Save the processed symbols */
+}
+
+Parser.prototype = Object.create(FastParser.prototype);
+
+Parser.prototype.walk = function(i, input) {
+    i = FastParser.prototype.walk.call(this, i, input);
+    var ch = input[i];
+    this.bytes[i + 1] = ch;
+    this.states[i + 1] = this.state;
+    this.symbols[i + 1] = this.lookupChar(ch);
+    return i;
+};
+
+
 
 /**
  * @function Parser#setCurrentState
@@ -421,9 +389,9 @@ Parser.prototype.setCurrentState = function(state) {
  * Get the states of the HTML5 page
  *
  */
-// Parser.prototype.getStates = function() {
-//     return this.states;
-// };
+Parser.prototype.getStates = function() {
+    return this.states;
+};
 
 /**
  * @function Parser#setInitState
@@ -434,9 +402,9 @@ Parser.prototype.setCurrentState = function(state) {
  * Set the init state of HTML5 Context Parser.
  *
  */
-// Parser.prototype.setInitState = function(state) {
-//     this.states[0] = state;
-// };
+Parser.prototype.setInitState = function(state) {
+    this.states[0] = state;
+};
 
 /**
  * @function Parser#getInitState
@@ -447,9 +415,9 @@ Parser.prototype.setCurrentState = function(state) {
  * Get the init state of HTML5 Context Parser.
  *
  */
-// Parser.prototype.getInitState = function() {
-//     return this.states[0];
-// };
+Parser.prototype.getInitState = function() {
+    return this.states[0];
+};
 
 /**
  * @function Parser#getLastState
@@ -460,10 +428,10 @@ Parser.prototype.setCurrentState = function(state) {
  * Get the last state of HTML5 Context Parser.
  *
  */
-// Parser.prototype.getLastState = function() {
-//     * undefined if length = 0 
-//     return this.states[ this.states.length - 1 ];
-// };
+Parser.prototype.getLastState = function() {
+    // * undefined if length = 0 
+    return this.states[ this.states.length - 1 ];
+};
 
 /**
  * @function Parser#getBuffer
@@ -474,9 +442,9 @@ Parser.prototype.setCurrentState = function(state) {
  * Get the characters from the buffer with _saveToBuffer = true.
  *
  */
-// Parser.prototype.getBuffer = function() {
-//     return this.bytes;
-// };
+Parser.prototype.getBuffer = function() {
+    return this.bytes;
+};
 
 /**
  * @function Parser#getAttributeName
@@ -516,6 +484,7 @@ Parser.prototype.getStartTagName = function() {
 
 module.exports = {
     Parser: Parser,
+    FastParser: FastParser,
     StateMachine: stateMachine
 };
 
