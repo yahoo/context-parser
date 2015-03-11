@@ -12,7 +12,7 @@ Debug.enable(progname);
 
 (function() {
     var CP = require("../src/context-parser"),
-        Parser = CP.Parser,
+        Parser = CP.FastParser,
         StateMachine = CP.StateMachine,
         ch,
         symbol,
@@ -28,7 +28,7 @@ Debug.enable(progname);
         if (index === 2) {
             ch = val;
         } else if (index === 3) {
-            state = val;
+            state = parseInt(val);
         }
     });
 

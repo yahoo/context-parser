@@ -9,13 +9,22 @@ var fs = require('fs');
 var html = fs.readFileSync('tests/samples/tests/1m.html', "utf8");  
 
 var parsers = [
-    ['Context Parser (Full)', '../src/context-parser', 'Parser', 'contextualize'],
     ['Context Parser (Fast)', '../src/context-parser', 'FastParser', 'contextualize'],
+];
+
+var allParsers = parsers.concat([
+    ['Context Parser (Full)', '../src/context-parser', 'Parser', 'contextualize'],
     ['Parse5', 'parse5', 'Parser', 'parse'],
     ['Gumbo', 'gumbo-parser'],
     ['High5', 'high5', '', 'end'],
     ['HtmlParser2', 'htmlparser2', 'Parser', 'end'],
-];
+]);
+
+console.log("Usage: benchmark [all]");
+
+if ( process.argv.length > 2 ) {
+    parsers = allParsers;
+}
 
 parsers.forEach(function(parser) {
 
