@@ -1,6 +1,6 @@
 {
   "name": "context-parser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "licenses": [
     {
       "type": "BSD",
@@ -29,8 +29,7 @@
     "clean": "grunt clean",
     "test": "grunt test"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "debug": "^2.*",
     "expect.js": "^0.3.1",
