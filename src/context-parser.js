@@ -37,6 +37,7 @@ function FastParser() {
  */
 FastParser.prototype.contextualize = function(input) {
     var len = input.length;
+
     for(var i = 0; i < len; ++i) {
         i = this.beforeWalk(i, input);
         if ( i >= len ) { break; }
@@ -244,9 +245,12 @@ function Parser () {
     this.contexts = [];
     this.buffer = []; /* Save the processed character into the internal buffer */
     this.symbols = []; /* Save the processed symbols */
+
 }
 
+// as in https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/prototype 
 Parser.prototype = Object.create(FastParser.prototype);
+Parser.prototype.constructor = FastParser;
 
 Parser.prototype.walk = function(i, input) {
     i = FastParser.prototype.walk.call(this, i, input);
@@ -323,19 +327,6 @@ Parser.prototype.getInitState = function() {
 Parser.prototype.getLastState = function() {
     // * undefined if length = 0 
     return this.states[ this.states.length - 1 ];
-};
-
-/**
- * @function Parser#getBuffer
- *
- * @returns {string} The characters of the html page.
- *
- * @description
- * Get the characters from the buffer with _saveToBuffer = true.
- *
- */
-Parser.prototype.getBuffer = function() {
-    return this.bytes;
 };
 
 /**

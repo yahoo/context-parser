@@ -11,24 +11,23 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
     require("mocha");
     var expect = require("expect.js"),
-        fs = require("fs"),
-        Parser = require("../../src/context-parser").Parser;
+        fs = require("fs");
 
-    describe('HTML5 Context Parser bug test suite', function(){
+    describe('HTML5 Context Parser with Buggy Subclass Prototype', function(){
 
-        it('Don\'t print char twice in reconsume logic test', function(){
-            var o = "";
+        it('should not print char twice in reconsume logic test', function(){
             var file  = "./tests/samples/tests/001.html";
-
-            Parser.prototype.afterWalk = function( ch, i ) {
+            var Parser = require("../../src/context-parser").Parser;
+            var BuggyParser = function() { Parser.call(this); }
+            BuggyParser.prototype = Object.create(Parser.prototype);
+            BuggyParser.prototype.constructor = Parser;
+            BuggyParser.prototype.afterWalk = function( ch, i ) {
                 if (!this.bytes) {
                     this.bytes = [];
                 }
                 this.bytes[i] = ch;
             };
-
-            var parser = new Parser();
-
+            var parser = new BuggyParser();
             var data = fs.readFileSync(file, 'utf-8');
             parser.contextualize(data);
             o = parser.bytes.join('');
@@ -36,6 +35,32 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             expect(o).not.to.match(/sscript/);
             expect(o).not.to.match(/script>>/);
             expect(o).not.to.match(/\/a>>/);
+        });
+
+        it('should not crash with "beforeWalk" returning out of bound index', function() {
+            var Parser = require("../../src/context-parser").Parser;
+            var BuggyParser = function() { Parser.call(this); }
+            BuggyParser.prototype = Object.create(Parser.prototype);
+            BuggyParser.prototype.constructor = Parser;
+            BuggyParser.prototype.beforeWalk = function( ) {
+                return 1000;
+            }
+            var parser = new BuggyParser();
+            parser.contextualize('<html></html>');
+
+        });
+
+        it('should not crash with "walk" returning out of bound index', function() {
+            var Parser = require("../../src/context-parser").Parser;
+            var BuggyParser = function() { Parser.call(this); }
+            BuggyParser.prototype = Object.create(Parser.prototype);
+            BuggyParser.prototype.constructor = Parser;
+            BuggyParser.prototype.walk = function( ) {
+                return 1000;
+            }
+            var parser = new BuggyParser();
+            parser.contextualize('<html></html>');
+
         });
 
     });
