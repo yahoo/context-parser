@@ -5,29 +5,34 @@ Copyrights licensed under the New BSD License.
 See the accompanying LICENSE file for terms.
 */
 
-// var path = require('path'),
-//     fs = require('fs'),
-//     lib = path.join(path.dirname(fs.realpathSync(__filename)), '../tests/benchmarks/');
-// require(lib + '/quick.js');
-
 var fs = require('fs');
 var html = fs.readFileSync('tests/samples/tests/1m.html', "utf8");  
 
 var parsers = [
-//    ['../src/context-parser', 'Parser', 'contextualize'],
-    ['../src/context-parser', 'FastParser', 'contextualize'],
-    ['parse5', 'Parser', 'parse'],
-    ['gumbo-parser'],
-    ['high5', '', 'end'],
-    ['htmlparser2', 'Parser', 'end'],
+    ['Context Parser (Fast)', '../src/context-parser', 'FastParser', 'contextualize'],
 ];
+
+var allParsers = parsers.concat([
+    ['Context Parser (Full)', '../src/context-parser', 'Parser', 'contextualize'],
+    ['Parse5', 'parse5', 'Parser', 'parse'],
+    ['Gumbo', 'gumbo-parser'],
+    ['High5', 'high5', '', 'end'],
+    ['HtmlParser2', 'htmlparser2', 'Parser', 'end'],
+]);
+
+console.log("Usage: benchmark [all]");
+
+if ( process.argv.length > 2 ) {
+    parsers = allParsers;
+}
 
 parsers.forEach(function(parser) {
 
     var start, end;
-    var classname = parser[0];
-    var name = parser[1];
-    var method = parser[2];
+    var parsername = parser[0];
+    var classname = parser[1];
+    var name = parser[2];
+    var method = parser[3];
 
     try {
         if ( name || method ) {
@@ -46,11 +51,9 @@ parsers.forEach(function(parser) {
             }
             end = +new Date();
         }
-
-
-        console.log(classname + " runs at a speed of " + 10/((end - start)/1000) + " MB per seconds [" + (end-start)/10/1000 + " second per MB].")
+        console.log(parsername + " runs at a speed of " + 10/((end - start)/1000) + " MB per seconds [" + (end-start)/10/1000 + " second per MB].")
     } catch (e) {
-        console.log(e);
+        console.log('Error running ' + parsername + '. Try running npm install ' + classname + '? [' + e + ']');
 
     }
 });

@@ -10,8 +10,6 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 (function() {
 "use strict";
 
-var debug = require('debug')('context-parser');
-var trace = require('debug')('context-parser-trace');
 var stateMachine = require('./html5-state-machine.js');
 
 /**
@@ -39,6 +37,7 @@ function FastParser() {
  */
 FastParser.prototype.contextualize = function(input) {
     var len = input.length;
+
     for(var i = 0; i < len; ++i) {
         i = this.beforeWalk(i, input);
         if ( i >= len ) { break; }
@@ -59,117 +58,36 @@ FastParser.prototype.contextualize = function(input) {
 FastParser.prototype.walk = function(i, input) {
 
     var ch = input[i],
-        len = input.length,
         symbol = this.lookupChar(ch),
         extraLogic = stateMachine.lookupAltLogicFromSymbol[symbol][this.state],
         reconsume = stateMachine.lookupReconsumeFromSymbol[symbol][this.state];
-
-    // trace('Enter the walk');
-    // trace({i: i, ch: ch, symbol: symbol, state: this.state, extraLogic: extraLogic, reconsume: reconsume });
-    // trace({states: this.states});
-    // trace({bytes: this.bytes});
-    // trace({contexts: this.contexts});
 
     /* Set state based on the current head pointer symbol */
     this.state = stateMachine.lookupStateFromSymbol[symbol][this.state];
 
     /* See if there is any extra logic required for this state transition */
     switch (extraLogic) {
-        case 1:                       /* new start tag token */
-            this.tagNameIdx = 0;
-            this.tagNames[0] = ch.toLowerCase();
-            break;
-        case 2:                       /* new end tag token */
-            this.tagNameIdx = 1;
-            this.tagNames[1] = ch.toLowerCase();
-            break;
-        case 3:                       /* append to the current start|end tag token */
-            this.tagNames[this.tagNameIdx] += ch.toLowerCase();
-            break;
-        case 4:                       /* remove the end tag token */
-            this.tagNameIdx = 1;
-            this.tagNames[1] = '';
-            break;
-        // case 5:                       /* new end tag token */
-        //     this.tagNameIdx = 1;
-        //     this.tagNames[1] = ch.toLowerCase();
-        //     break;
+        case 1:  this.createStartTag(ch); break;
+        case 2:  this.createEndTag(ch);   break;
+        case 3:  this.appendTagName(ch);  break;
+        case 4:  this.resetEndTag(ch);    break;
         case 6:                       /* match end tag token with start tag token's tag name */
             if(this.tagNames[0] === this.tagNames[1]) {
-                /* Extra Logic #6 :
-                WHITESPACE: If the current end tag token is an appropriate end tag token, then switch to the before attribute name state.
-                        Otherwise, treat it as per the 'anything else' entry below.
-                SOLIDUS (/): If the current end tag token is an appropriate end tag token, then switch to the this.closing start tag state.
-                        Otherwise, treat it as per the 'anything else' entry below.
-                GREATER-THAN SIGN (>): If the current end tag token is an appropriate end tag token, then switch to the data state and emit the current tag token.
-                        Otherwise, treat it as per the 'anything else' entry below.
-                */
                 reconsume = 0;  /* see 12.2.4.13 - switch state for the following case, otherwise, reconsume. */
-                this.tagNames[0] = '';
-                this.tagNames[1] = '';
-                switch (ch) {
-                    case ' ': /** Whitespaces */
-                        this.state = stateMachine.State.STATE_BEFORE_ATTRIBUTE_NAME;
-                        break;
-                    case '/': /** [/] */
-                        this.state = stateMachine.State.STATE_SELF_CLOSING_START_TAG;
-                        break;
-                    case '>': /** [>] */
-                        this.state = stateMachine.State.STATE_DATA;
-                        break;
-                }
+                this.matchEndTagWithStartTag(ch);
             }
             break;
-
-        case 8:                       /* switch to the script data double escaped state if we see <script> inside <script><!-- */
-            if ( this.tagNames[1] === 'script') {
-                this.state = stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPED;
-            }
-            break;
-
-        case 11:                      /* context transition when seeing <sometag> and switch to Script / Rawtext / RCdata / ... */
-            switch (this.tagNames[0]) {
-                // TODO - give exceptions when non-HTML namespace is used.
-                // case 'math':
-                // case 'svg':
-                //     break;
-                case 'script':
-                    this.state = stateMachine.State.STATE_SCRIPT_DATA;
-                    break;
-                case 'noframes':
-                case 'style':
-                case 'xmp':
-                case 'iframe':
-                case 'noembed':
-                case 'noscript':
-                    this.state = stateMachine.State.STATE_RAWTEXT;
-                    break;
-                case 'textarea':
-                case 'title':
-                    this.state = stateMachine.State.STATE_RCDATA;
-                    break;
-                case 'plaintext':
-                    this.state = stateMachine.State.STATE_PLAINTEXT;
-                    break;
-            }
-            break;
-
-        case 12:                      /* new attribute name and value token */
-            this.attributeValue = '';
-            this.attributeName = ch.toLowerCase();
-            break;
-        case 13:                      /* append to attribute name token */
-            this.attributeName += ch.toLowerCase();
-            break;
-        case 14:                      /* append to attribute value token */
-            this.attributeValue += ch.toLowerCase();
-            break;
+        case 8:  this.matchEscapedScriptTag(ch); break;
+        case 11: this.processTagName(ch); break;
+        case 12: this.createAttributeNameAndValueTag(ch); break;
+        case 13: this.appendAttributeNameTag(ch); break;
+        case 14: this.appendAttributeValueTag(ch); break;
     }
 
     if (reconsume) {                  /* reconsume the character */
-        // trace('Reconsuming...');
         if( this.states) {
-            this.states[i] = this.state; // This is buggy. May need to change the way we walk the stream to avoid this.
+            // This is error prone. May need to change the way we walk the stream to avoid this.
+            this.states[i] = this.state; 
         }
         return this.walk(i, input);
     }
@@ -177,102 +95,97 @@ FastParser.prototype.walk = function(i, input) {
     return i;
 };
 
-/**
- * @function FastParser#extractContext
- *
- * @param {integer} before - the state before the selected character
- * @param {integer} after - the state after the selected character
- * @returns {integer} the context of the character.
+FastParser.prototype.createStartTag = function (ch) {
+    this.tagNameIdx = 0;
+    this.tagNames[0] = ch.toLowerCase();
+};
 
- */
-FastParser.prototype.extractContext = function(before, after) {
+FastParser.prototype.createEndTag = function (ch) {
+    this.tagNameIdx = 1;
+    this.tagNames[1] = ch.toLowerCase();
+};
 
-    if ( before === after ) {     /* context that are encapsulated by operators. e.g. bar in <foo>bar</far> */
-        switch (after) {
-            case stateMachine.State.STATE_DATA:
-                return stateMachine.Context.HTML;
-            case stateMachine.State.STATE_RCDATA:
-                return stateMachine.Context.RCDATA;
-            case stateMachine.State.STATE_RAWTEXT:
-                return stateMachine.Context.RAWTEXT;
-            case stateMachine.State.STATE_SCRIPT_DATA:
-                return stateMachine.Context.SCRIPT;
-            case stateMachine.State.STATE_PLAINTEXT:
-                return stateMachine.Context.PLAINTEXT;
-            case stateMachine.State.STATE_TAG_NAME:
-            case stateMachine.State.STATE_RCDATA_END_TAG_NAME:
-            case stateMachine.State.STATE_RAWTEXT_END_TAG_NAME:
-                return stateMachine.Context.TAG_NAME;
-            case stateMachine.State.STATE_ATTRIBUTE_NAME:
-                return stateMachine.Context.ATTRIBUTE_NAME;
-            case stateMachine.State.STATE_ATTRIBUTE_VALUE_DOUBLE_QUOTED:
-                return stateMachine.Context.ATTRIBUTE_VALUE_DOUBLE_QUOTED;
-            case stateMachine.State.STATE_ATTRIBUTE_VALUE_SINGLE_QUOTED:
-                return stateMachine.Context.ATTRIBUTE_VALUE_SINGLE_QUOTED;
-            case stateMachine.State.STATE_ATTRIBUTE_VALUE_UNQUOTED:
-                return stateMachine.Context.ATTRIBUTE_VALUE_UNQUOTED;
-            case stateMachine.State.STATE_BOGUS_COMMENT:
-                return stateMachine.Context.BOGUS_COMMENT;
-            case stateMachine.State.STATE_COMMENT:
-                return stateMachine.Context.COMMENT;
-            case stateMachine.State.STATE_SCRIPT_DATA_LESS_THAN_SIGN:
-            case stateMachine.State.STATE_SCRIPT_DATA_END_TAG_OPEN:
-            case stateMachine.State.STATE_SCRIPT_DATA_END_TAG_NAME:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPE_START:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPE_START_DASH:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPED:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPED_DASH:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPED_DASH_DASH:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPED_LESS_THAN_SIGN:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPED_END_TAG_OPEN:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPED_END_TAG_NAME:
-            case stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPE_START:
-            case stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPED:
-            case stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPED_DASH:
-            case stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH:
-            case stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPED_LESS_THAN_SIGN:
-            case stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPE_END:                
-                return stateMachine.Context.SCRIPT;                
+FastParser.prototype.appendTagName = function (ch) {
+    this.tagNames[this.tagNameIdx] += ch.toLowerCase();
+};
+
+FastParser.prototype.resetEndTag = function (ch) {
+    this.tagNameIdx = 1;
+    this.tagNames[1] = '';
+};
+
+FastParser.prototype.matchEndTagWithStartTag = function (ch) {
+        /* Extra Logic #6 :
+        WHITESPACE: If the current end tag token is an appropriate end tag token, then switch to the before attribute name state.
+                Otherwise, treat it as per the 'anything else' entry below.
+        SOLIDUS (/): If the current end tag token is an appropriate end tag token, then switch to the this.closing start tag state.
+                Otherwise, treat it as per the 'anything else' entry below.
+        GREATER-THAN SIGN (>): If the current end tag token is an appropriate end tag token, then switch to the data state and emit the current tag token.
+                Otherwise, treat it as per the 'anything else' entry below.
+        */
+        this.tagNames[0] = '';
+        this.tagNames[1] = '';
+        switch (ch) {
+            case ' ': /** Whitespaces */
+                this.state = stateMachine.State.STATE_BEFORE_ATTRIBUTE_NAME;
+                return ;
+            case '/': /** [/] */
+                this.state = stateMachine.State.STATE_SELF_CLOSING_START_TAG;
+                return ;
+            case '>': /** [>] */
+                this.state = stateMachine.State.STATE_DATA;
+                return ; 
         }
-    } else {                   /* context that are determined by previous operator. e.g. bar in <bar quz=...> */
-        switch (after) {
-            case stateMachine.State.STATE_TAG_NAME:
-            case stateMachine.State.STATE_RCDATA_END_TAG_NAME:
-            case stateMachine.State.STATE_RAWTEXT_END_TAG_NAME:
-            case stateMachine.State.STATE_SCRIPT_DATA_END_TAG_NAME:
-                return stateMachine.Context.TAG_NAME;
-            case stateMachine.State.STATE_ATTRIBUTE_NAME:
-                return stateMachine.Context.ATTRIBUTE_NAME;
-            case stateMachine.State.STATE_ATTRIBUTE_VALUE_UNQUOTED:
-                return stateMachine.Context.ATTRIBUTE_VALUE_UNQUOTED;
-            case stateMachine.State.STATE_BOGUS_COMMENT:
-                return stateMachine.Context.BOGUS_COMMENT;
+};
 
-            // TODO... 
-            case stateMachine.State.STATE_SCRIPT_DATA:                
-            case stateMachine.State.STATE_SCRIPT_DATA_LESS_THAN_SIGN:
-            case stateMachine.State.STATE_SCRIPT_DATA_END_TAG_OPEN:
-            case stateMachine.State.STATE_SCRIPT_DATA_END_TAG_NAME:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPE_START:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPE_START_DASH:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPED:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPED_DASH:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPED_DASH_DASH:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPED_LESS_THAN_SIGN:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPED_END_TAG_OPEN:
-            case stateMachine.State.STATE_SCRIPT_DATA_ESCAPED_END_TAG_NAME:
-            case stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPE_START:
-            case stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPED:
-            case stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPED_DASH:
-            case stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH:
-            case stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPED_LESS_THAN_SIGN:
-            case stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPE_END:                
-                return stateMachine.Context.SCRIPT;
-        }
+FastParser.prototype.matchEscapedScriptTag = function (ch) {
+    /* switch to the script data double escaped state if we see <script> inside <script><!-- */    
+    if ( this.tagNames[1] === 'script') {
+        this.state = stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPED;
     }
+};
 
-    return stateMachine.Context.OPERATOR;
+FastParser.prototype.processTagName = function (ch) {
+    /* context transition when seeing <sometag> and switch to Script / Rawtext / RCdata / ... */
+    switch (this.tagNames[0]) {
+        // TODO - give exceptions when non-HTML namespace is used.
+        // case 'math':
+        // case 'svg':
+        //     break;
+        case 'script':
+            this.state = stateMachine.State.STATE_SCRIPT_DATA;
+            break;
+        case 'noframes':
+        case 'style':
+        case 'xmp':
+        case 'iframe':
+        case 'noembed':
+        case 'noscript':
+            this.state = stateMachine.State.STATE_RAWTEXT;
+            break;
+        case 'textarea':
+        case 'title':
+            this.state = stateMachine.State.STATE_RCDATA;
+            break;
+        case 'plaintext':
+            this.state = stateMachine.State.STATE_PLAINTEXT;
+            break;
+    }
+};
 
+FastParser.prototype.createAttributeNameAndValueTag = function (ch) {
+    /* new attribute name and value token */
+    this.attributeValue = '';
+    this.attributeName = ch.toLowerCase();
+};
+
+FastParser.prototype.appendAttributeNameTag = function (ch) {
+    /* append to attribute name token */
+    this.attributeName += ch.toLowerCase();
+};
+
+FastParser.prototype.appendAttributeValueTag = function(ch) {
+    this.attributeValue += ch;   
 };
 
 /**
@@ -286,31 +199,13 @@ FastParser.prototype.extractContext = function(before, after) {
  * e.g. [A-z] = type 17 (Letter [A-z])</p>
  *
  */
+
+
+
 FastParser.prototype.lookupChar = function(ch) {
-
-    // console.log(' - ' + ch + ' - ')
     var o = ch.charCodeAt(0);
-
-    if( o >= stateMachine.Char.SMALL_A && o <= stateMachine.Char.SMALL_Z ) { return 11; }
-    if( o >= stateMachine.Char.CAPTIAL_A && o <= stateMachine.Char.CAPTIAL_Z ) { return 11; }
-
-    if( o ===  stateMachine.Char.TAB) { return 0; } 
-    if( o ===  stateMachine.Char.LF) { return 0; } 
-    if( o ===  stateMachine.Char.FF) { return 0; } 
-    if( o ===  stateMachine.Char.SPACE) { return 0; } 
-    if( o ===  stateMachine.Char.EXCLAMATION) { return 1; } 
-    if( o ===  stateMachine.Char.DOUBLE_QUOTE) { return 2; } 
-    if( o ===  stateMachine.Char.AMPERSAND) { return 3; } 
-    if( o ===  stateMachine.Char.SINGLE_QUOTE) { return 4; } 
-    if( o ===  stateMachine.Char.DASH) { return 5; } 
-    if( o ===  stateMachine.Char.SLASH) { return 6; } 
-    if( o ===  stateMachine.Char.GREATER) { return 7; } 
-    if( o ===  stateMachine.Char.EQUAL) { return 8; } 
-    if( o ===  stateMachine.Char.LESS) { return 9; } 
-    if( o ===  stateMachine.Char.QUESTION) { return 10; } 
-
-    return 12;
-    
+    if ( o > 122 ) { return 12; }
+    return stateMachine.lookupSymbolFromChar[o];
 };
 
 /**
@@ -326,7 +221,6 @@ FastParser.prototype.lookupChar = function(ch) {
  *
  */
 FastParser.prototype.beforeWalk = function( i, input ) {
-    // debug('in html5 token beforeWalk');
     return i;
 };
 
@@ -341,7 +235,6 @@ FastParser.prototype.beforeWalk = function( i, input ) {
  *
  */
 FastParser.prototype.afterWalk = function( ch, i ) {
-    // debug('in html5 token afterWalk');
 };
 
 
@@ -352,9 +245,12 @@ function Parser () {
     this.contexts = [];
     this.buffer = []; /* Save the processed character into the internal buffer */
     this.symbols = []; /* Save the processed symbols */
+
 }
 
+// as in https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/prototype 
 Parser.prototype = Object.create(FastParser.prototype);
+Parser.prototype.constructor = FastParser;
 
 Parser.prototype.walk = function(i, input) {
     i = FastParser.prototype.walk.call(this, i, input);
@@ -431,19 +327,6 @@ Parser.prototype.getInitState = function() {
 Parser.prototype.getLastState = function() {
     // * undefined if length = 0 
     return this.states[ this.states.length - 1 ];
-};
-
-/**
- * @function Parser#getBuffer
- *
- * @returns {string} The characters of the html page.
- *
- * @description
- * Get the characters from the buffer with _saveToBuffer = true.
- *
- */
-Parser.prototype.getBuffer = function() {
-    return this.bytes;
 };
 
 /**
