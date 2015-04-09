@@ -43,7 +43,7 @@ FastParser.prototype.contextualize = function(input) {
         if ( i >= len ) { break; }
         i = this.walk(i, input);
         if ( i >= len ) { break; }
-        this.afterWalk(input[i], i);
+        this.afterWalk(i, input);
     }
 };
 
