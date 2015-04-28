@@ -75,7 +75,7 @@ FastParser.prototype.walk = function(i, input) {
         case 6:                       /* match end tag token with start tag token's tag name */
             if(this.tagNames[0] === this.tagNames[1]) {
                 reconsume = 0;  /* see 12.2.4.13 - switch state for the following case, otherwise, reconsume. */
-                this.matchEndTagWithStartTag(ch);
+                this.matchEndTagWithStartTag(symbol);
             }
             break;
         case 8:  this.matchEscapedScriptTag(ch); break;
@@ -115,7 +115,7 @@ FastParser.prototype.resetEndTag = function (ch) {
     this.tagNames[1] = '';
 };
 
-FastParser.prototype.matchEndTagWithStartTag = function (ch) {
+FastParser.prototype.matchEndTagWithStartTag = function (symbol) {
         /* Extra Logic #6 :
         WHITESPACE: If the current end tag token is an appropriate end tag token, then switch to the before attribute name state.
                 Otherwise, treat it as per the 'anything else' entry below.
@@ -126,14 +126,14 @@ FastParser.prototype.matchEndTagWithStartTag = function (ch) {
         */
         this.tagNames[0] = '';
         this.tagNames[1] = '';
-        switch (ch) {
-            case ' ': /** Whitespaces */
+        switch (symbol) {
+            case stateMachine.Symbol.SPACE: /** Whitespaces */
                 this.state = stateMachine.State.STATE_BEFORE_ATTRIBUTE_NAME;
                 return ;
-            case '/': /** [/] */
+            case stateMachine.Symbol.SOLIDUS: /** [/] */
                 this.state = stateMachine.State.STATE_SELF_CLOSING_START_TAG;
                 return ;
-            case '>': /** [>] */
+            case stateMachine.Symbol.GREATER: /** [>] */
                 this.state = stateMachine.State.STATE_DATA;
                 return ; 
         }
@@ -509,6 +509,9 @@ StateMachine.lookupSymbolFromChar = [
     11,11,11,11,11,11,11,11,11,11,
     11,11,11,12
 ];
+
+
+// 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10, 1, 2, 3, 4, 5, 6, 7, 8, 9,20, 1, 2, 3, 4, 5, 6, 7, 8, 9,30, 1, 2, 3, 4, 5, 6, 7, 8, 9,40, 1, 2, 3, 4, 5, 6, 7, 8, 9,50, 1, 2, 3, 4, 5, 6, 7, 8, 9,
 
 StateMachine.lookupStateFromSymbol = [
  [ 0, 1, 0, 3, 0, 5, 6, 7, 1,44,34, 3, 3, 3, 5, 5, 5, 6, 6, 6, 6, 6,22,22,22,22,22,22,22,29,29,29,29,29,34,36,36,37,38,39,34, 0,34,34,44,44,48,48,48,48,48,48, 0,44],

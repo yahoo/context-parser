@@ -74,7 +74,7 @@ FastParser.prototype.walk = function(i, input) {
         case 6:                       /* match end tag token with start tag token's tag name */
             if(this.tagNames[0] === this.tagNames[1]) {
                 reconsume = 0;  /* see 12.2.4.13 - switch state for the following case, otherwise, reconsume. */
-                this.matchEndTagWithStartTag(ch);
+                this.matchEndTagWithStartTag(symbol);
             }
             break;
         case 8:  this.matchEscapedScriptTag(ch); break;
@@ -114,7 +114,7 @@ FastParser.prototype.resetEndTag = function (ch) {
     this.tagNames[1] = '';
 };
 
-FastParser.prototype.matchEndTagWithStartTag = function (ch) {
+FastParser.prototype.matchEndTagWithStartTag = function (symbol) {
         /* Extra Logic #6 :
         WHITESPACE: If the current end tag token is an appropriate end tag token, then switch to the before attribute name state.
                 Otherwise, treat it as per the 'anything else' entry below.
@@ -125,14 +125,14 @@ FastParser.prototype.matchEndTagWithStartTag = function (ch) {
         */
         this.tagNames[0] = '';
         this.tagNames[1] = '';
-        switch (ch) {
-            case ' ': /** Whitespaces */
+        switch (symbol) {
+            case stateMachine.Symbol.SPACE: /** Whitespaces */
                 this.state = stateMachine.State.STATE_BEFORE_ATTRIBUTE_NAME;
                 return ;
-            case '/': /** [/] */
+            case stateMachine.Symbol.SOLIDUS: /** [/] */
                 this.state = stateMachine.State.STATE_SELF_CLOSING_START_TAG;
                 return ;
-            case '>': /** [>] */
+            case stateMachine.Symbol.GREATER: /** [>] */
                 this.state = stateMachine.State.STATE_DATA;
                 return ; 
         }
