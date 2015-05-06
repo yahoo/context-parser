@@ -21,11 +21,11 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             var BuggyParser = function() { Parser.call(this); }
             BuggyParser.prototype = Object.create(Parser.prototype);
             BuggyParser.prototype.constructor = Parser;
-            BuggyParser.prototype.afterWalk = function( ch, i ) {
+            BuggyParser.prototype.afterWalk = function( i, input) {
                 if (!this.bytes) {
                     this.bytes = [];
                 }
-                this.bytes[i] = ch;
+                this.bytes[i] = input[i];
             };
             var parser = new BuggyParser();
             var data = fs.readFileSync(file, 'utf-8');

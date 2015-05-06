@@ -43,7 +43,7 @@ FastParser.prototype.contextualize = function(input) {
         if ( i >= len ) { break; }
         i = this.walk(i, input);
         if ( i >= len ) { break; }
-        this.afterWalk(input[i], i);
+        this.afterWalk(i, input);
     }
 };
 
@@ -227,14 +227,14 @@ FastParser.prototype.beforeWalk = function( i, input ) {
 /**
  * @function FastParser#afterWalk
  *
- * @param {string} ch - The character consumed.
  * @param {integer} i - the head pointer location of this character
+ * @param {string} input - The input stream.
  *
  * @description
  * Interface function for subclass to implement logics after parsing the character.
  *
  */
-FastParser.prototype.afterWalk = function( ch, i ) {
+FastParser.prototype.afterWalk = function( i, input ) {
 };
 
 
