@@ -237,4 +237,98 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         });
 
     });
+
+    describe('#getAttributeType', function(){
+
+        it('should return attribute type - GENERAL', function(){
+            var p1 = new Parser();
+            var html = "<div class='class";
+            p1.contextualize(html);
+            assert.equal(p1.getAttributeType(), p1.ATTRTYPE_GENERAL);
+        });
+
+        it('should return attribute type - CSS', function(){
+            var p1 = new Parser();
+            var html = "<div style='color:";
+            p1.contextualize(html);
+            assert.equal(p1.getAttributeType(), p1.ATTRTYPE_CSS);
+        });
+
+
+        it('should return attribute type - MIME', function(){
+            var p1 = new Parser();
+            var html = "<iframe type='text/";
+            p1.contextualize(html);
+            assert.equal(p1.getAttributeType(), p1.ATTRTYPE_MIME);
+        });
+
+        it('should return attribute type - URI', function(){
+            var p1 = new Parser();
+            var html = "<a href='";
+            p1.contextualize(html);
+            assert.equal(p1.getAttributeType(), p1.ATTRTYPE_URI);
+        });
+
+
+        it('should return tag-specific attribute type - data', function(){
+            var p1 = new Parser();
+            var html = "<object data='";
+            p1.contextualize(html);
+            assert.equal(p1.getAttributeType(), p1.ATTRTYPE_URI);
+
+            var html = "<input data='";
+            p1.contextualize(html);
+            assert.equal(p1.getAttributeType(), p1.ATTRTYPE_GENERAL);
+
+        });
+
+        it('should return tag-specific attribute type - rel', function(){
+            var p1 = new Parser();
+            var html = "<link rel='";
+            p1.contextualize(html);
+            assert.equal(p1.getAttributeType(), p1.ATTRTYPE_URI);
+
+            var html = "<div rel='";
+            p1.contextualize(html);
+            assert.equal(p1.getAttributeType(), p1.ATTRTYPE_GENERAL);
+        });
+
+
+        it('should return tag-specific attribute type - value', function(){
+            var p1 = new Parser();
+            var html = "<param value='";
+            p1.contextualize(html);
+            assert.equal(p1.getAttributeType(), p1.ATTRTYPE_URI);
+
+
+            var html = "<input value='";
+            p1.contextualize(html);
+            assert.equal(p1.getAttributeType(), p1.ATTRTYPE_GENERAL);
+        });
+
+        it('should return attribute type - EVENT', function(){
+            var p1 = new Parser();
+            var html = "<input onclick='";
+            p1.contextualize(html);
+            assert.equal(p1.getAttributeType(), p1.ATTRTYPE_EVENT);
+        });
+    });
+
+
+    describe('#isScriptableTag', function(){
+        it('should return true when tag is scriptable', function(){
+            var p1 = new Parser();
+            var html = "<script>alert(1)";
+            p1.contextualize(html);
+            assert.equal(p1.isScriptableTag(), true);
+        });
+
+        it('should return false when tag is non-scriptable', function(){
+            var p1 = new Parser();
+            var html = "<div>alert(1)";
+            p1.contextualize(html);
+            assert.equal(p1.isScriptableTag(), false);
+        });
+    });
+
 }());
