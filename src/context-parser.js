@@ -344,6 +344,20 @@ FastParser.prototype.getAttributeValue = function(htmlDecoded) {
 
 
 
+// strip redundant spaces
+function HtmlMinify(lastState, state, i) {
+    // if SPACE is encountered 
+    if (lastState === state && 
+            i + 1 < this.inputLen &&  // to ensure that reducing one char wouldn't fail later walk()
+            this.lookupChar(this.input[i]) === stateMachine.Symbol.SPACE &&
+            (state === stateMachine.state.STATE_DATA ||
+             state === stateMachine.state.STATE_BEFORE_ATTRIBUTE_NAME ||
+             state === stateMachine.state.STATE_AFTER_ATTRIBUTE_NAME || 
+             state === stateMachine.state.STATE_BEFORE_ATTRIBUTE_VALUE)) {
+        this.input.splice(i, 1);
+        this.inputLen--;
+    }
+}
 
 
 function Parser (config, listeners) {
@@ -368,6 +382,9 @@ function Parser (config, listeners) {
         }
         return;
     }
+
+    // this should be the last handler of preWalk
+    config.enableHTMLMinification && self.on('preWalk', HtmlMinify);
 
     // for bookkeeping the processed inputs and states
     if (!config.disableHistoryTracking) {
