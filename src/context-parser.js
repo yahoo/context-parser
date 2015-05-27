@@ -345,6 +345,54 @@ FastParser.prototype.getAttributeValue = function(htmlDecoded) {
 
 
 
+// Perform input stream preprocessing
+// Reference: https://html.spec.whatwg.org/multipage/syntax.html#preprocessing-the-input-stream
+function InputPreProcessing (state, i) {
+    var input = this.input, 
+        chr = input[i],
+        nextChr = input[i+1];
+
+    // equivalent to inputStr.replace(/\r\n?/g, '\n')
+    if (chr === '\r') {
+        if (nextChr === '\n') {
+            input.splice(i, 1);
+            this.inputLen--;
+        } else {
+            input[i] = '\n';
+        }
+    }
+    // the following are control characters or permanently undefined Unicode characters (noncharacters), resulting in parse errors
+    // \uFFFD replacement is not required by the specification, we consider \uFFFD character as an inert character
+    else if ((chr >= '\x01'   && chr <= '\x08') || 
+             (chr >= '\x0E'   && chr <= '\x1F') ||
+             (chr >= '\x7F'   && chr <= '\x9F') ||
+             (chr >= '\uFDD0' && chr <= '\uFDEF') ||
+             chr === '\x0B' || chr === '\uFFFE' || chr === '\uFFFF') {
+        input[i] = '\uFFFD';
+    } 
+    // U+1FFFE, U+1FFFF, U+2FFFE, U+2FFFF, U+3FFFE, U+3FFFF, 
+    // U+4FFFE, U+4FFFF, U+5FFFE, U+5FFFF, U+6FFFE, U+6FFFF, 
+    // U+7FFFE, U+7FFFF, U+8FFFE, U+8FFFF, U+9FFFE, U+9FFFF, 
+    // U+AFFFE, U+AFFFF, U+BFFFE, U+BFFFF, U+CFFFE, U+CFFFF, 
+    // U+DFFFE, U+DFFFF, U+EFFFE, U+EFFFF, U+FFFFE, U+FFFFF, 
+    // U+10FFFE, and U+10FFFF 
+    else if ((nextChr === '\uDFFE' || nextChr === '\uDFFF') && chr.charCodeAt(0) & 0xFC3F ^ 0xD83F === 0) {
+             // (  chr === '\uD83F' || chr === '\uD87F' || chr === '\uD8BF' || chr === '\uD8FF' || 
+             //    chr === '\uD93F' || chr === '\uD97F' || chr === '\uD9BF' || chr === '\uD9FF' || 
+             //    chr === '\uDA3F' || chr === '\uDA7F' || chr === '\uDABF' || chr === '\uDAFF' || 
+             //    chr === '\uDB3F' || chr === '\uDB7F' || chr === '\uDBBF' || chr === '\uDBFF')) {
+        input[i] = input[i+1] = '\uFFFD';
+    }
+}
+
+function NullReplacement(state, i) {
+    // batch replacement of NULL with \uFFFD would violate the spec
+    //  - for example, NULL is untouched in CDATA section state
+    if (this.input[i] === '\x00' && stateMachine.lookupStateForNullReplacement[state]) {
+        this.input[i] = '\uFFFD';
+    }
+}
+
 
 function Parser (config, listeners) {
     var self = this, k;
@@ -368,6 +416,12 @@ function Parser (config, listeners) {
         }
         return;
     }
+
+    // run through the input stream with input pre-processing
+    !config.disableInputPreProcessing && self.on('preWalk', InputPreProcessing);
+
+    // run through the input stream with state-aware null replacement
+    !config.disableNullReplacement && self.on('preWalk', NullReplacement);
 
     // for bookkeeping the processed inputs and states
     if (!config.disableHistoryTracking) {
