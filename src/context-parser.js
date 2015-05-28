@@ -7,44 +7,91 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
          Albert Yu <albertyu@yahoo-inc.com>
          Adonis Fung <adon@yahoo-inc.com>
 */
+/*jshint -W030 */
+
 (function() {
 "use strict";
 
 var stateMachine = require('./html5-state-machine.js');
-
 /**
  * @class FastParser
  * @constructor FastParser
  */
 function FastParser() {
+
+    this.listeners = {};
+
     this.state = stateMachine.State.STATE_DATA;  /* Save the current status */
-    this.tagNames = ['', '']; /* Save the current tag name */
-    this.tagNameIdx = '';
-    this.attributeName = ''; /* Save the current attribute name */
+    this.tags = ['', '']; /* Save the current tag name */
+    this.tagIdx = 0;
+    this.attrName = ''; /* Save the current attribute name */
     this.attributeValue = ''; /* Save the current attribute value */
+    this.input = '';
+    this.inputLen = 0;
 }
 
 /**
- * @function FastParser#contextualize
+ * @function FastParser#on
  *
- * @param {string} input - The byte stream of the HTML5 web page.
- * @returns {integer} The return code of success or failure of parsing.
+ * @param {string} eventType - the event type 
+ * @param {function} listener - the event listener
+ * @returns this
  *
  * @description
- * <p>The context analyzing function, it analyzes the output context of each character based on
- * the HTML5 WHATWG - https://html.spec.whatwg.org/multipage/</p>
+ * <p>register the given event listener to the given eventType</p>
  *
  */
-FastParser.prototype.contextualize = function(input) {
-    var len = input.length;
-
-    for(var i = 0; i < len; ++i) {
-        i = this.beforeWalk(i, input);
-        if ( i >= len ) { break; }
-        i = this.walk(i, input);
-        if ( i >= len ) { break; }
-        this.afterWalk(input[i], i);
+FastParser.prototype.on = function (eventType, listener) {
+    var l = this.listeners[eventType];
+    if (l) {
+        l.push(listener);
+    } else {
+        this.listeners[eventType] = [listener];
     }
+    return this;
+};
+
+/**
+ * @function FastParser#off
+ *
+ * @param {string} eventType - the event type (e.g., preWalk, reWalk, postWalk, ...)
+ * @param {function} listener - the event listener
+ * @returns this
+ *
+ * @description
+ * <p>remove the listener from being fired when the eventType happen</p>
+ *
+ */
+FastParser.prototype.off = function (listeners, listener) {
+    var i = listeners.length;
+    while (--i) {
+        if (listeners[i] === listener) {
+            listeners.splice(i, 1);
+            break;
+        }
+    }
+    return this;
+};
+
+/**
+ * @function FastParser#emit
+ *
+ * @param {string} eventType - the event type (e.g., preWalk, reWalk, postWalk, ...)
+ * @returns this
+ *
+ * @description
+ * <p>fire those listeners correspoding to the given eventType</p>
+ *
+ */
+FastParser.prototype.emit = function (listeners, args) {
+    var i = -1, len;
+    if ((len = listeners.length)) {
+        while (++i < len) {
+            listeners[i].apply(this, args || []);
+        }
+    }
+
+    return this;
 };
 
 /*
@@ -55,7 +102,7 @@ FastParser.prototype.contextualize = function(input) {
  * @returns {integer} the new location of the current character.
  *
  */
-FastParser.prototype.walk = function(i, input) {
+FastParser.prototype.walk = function(i, input, endsWithEOF) {
 
     var ch = input[i],
         symbol = this.lookupChar(ch),
@@ -72,7 +119,7 @@ FastParser.prototype.walk = function(i, input) {
         case 3:  this.appendTagName(ch);  break;
         case 4:  this.resetEndTag(ch);    break;
         case 6:                       /* match end tag token with start tag token's tag name */
-            if(this.tagNames[0] === this.tagNames[1]) {
+            if(this.tags[0].toLowerCase() === this.tags[1].toLowerCase()) {
                 reconsume = 0;  /* see 12.2.4.13 - switch state for the following case, otherwise, reconsume. */
                 this.matchEndTagWithStartTag(symbol);
             }
@@ -85,10 +132,7 @@ FastParser.prototype.walk = function(i, input) {
     }
 
     if (reconsume) {                  /* reconsume the character */
-        if( this.states) {
-            // This is error prone. May need to change the way we walk the stream to avoid this.
-            this.states[i] = this.state; 
-        }
+        this.listeners.reWalk && this.emit(this.listeners.reWalk, [this.state, i, endsWithEOF]);
         return this.walk(i, input);
     }
 
@@ -96,22 +140,22 @@ FastParser.prototype.walk = function(i, input) {
 };
 
 FastParser.prototype.createStartTag = function (ch) {
-    this.tagNameIdx = 0;
-    this.tagNames[0] = ch.toLowerCase();
+    this.tagIdx = 0;
+    this.tags[0] = ch;
 };
 
 FastParser.prototype.createEndTag = function (ch) {
-    this.tagNameIdx = 1;
-    this.tagNames[1] = ch.toLowerCase();
+    this.tagIdx = 1;
+    this.tags[1] = ch;
 };
 
 FastParser.prototype.appendTagName = function (ch) {
-    this.tagNames[this.tagNameIdx] += ch.toLowerCase();
+    this.tags[this.tagIdx] += ch;
 };
 
 FastParser.prototype.resetEndTag = function (ch) {
-    this.tagNameIdx = 1;
-    this.tagNames[1] = '';
+    this.tagIdx = 1;
+    this.tags[1] = '';
 };
 
 FastParser.prototype.matchEndTagWithStartTag = function (symbol) {
@@ -123,8 +167,9 @@ FastParser.prototype.matchEndTagWithStartTag = function (symbol) {
         GREATER-THAN SIGN (>): If the current end tag token is an appropriate end tag token, then switch to the data state and emit the current tag token.
                 Otherwise, treat it as per the 'anything else' entry below.
         */
-        this.tagNames[0] = '';
-        this.tagNames[1] = '';
+        this.tags[0] = '';
+        this.tags[1] = '';
+
         switch (symbol) {
             case stateMachine.Symbol.SPACE: /** Whitespaces */
                 this.state = stateMachine.State.STATE_BEFORE_ATTRIBUTE_NAME;
@@ -140,14 +185,14 @@ FastParser.prototype.matchEndTagWithStartTag = function (symbol) {
 
 FastParser.prototype.matchEscapedScriptTag = function (ch) {
     /* switch to the script data double escaped state if we see <script> inside <script><!-- */    
-    if ( this.tagNames[1] === 'script') {
+    if ( this.tags[1].toLowerCase() === 'script') {
         this.state = stateMachine.State.STATE_SCRIPT_DATA_DOUBLE_ESCAPED;
     }
 };
 
 FastParser.prototype.processTagName = function (ch) {
     /* context transition when seeing <sometag> and switch to Script / Rawtext / RCdata / ... */
-    switch (this.tagNames[0]) {
+    switch (this.tags[0].toLowerCase()) {
         // TODO - give exceptions when non-HTML namespace is used.
         // case 'math':
         // case 'svg':
@@ -176,12 +221,12 @@ FastParser.prototype.processTagName = function (ch) {
 FastParser.prototype.createAttributeNameAndValueTag = function (ch) {
     /* new attribute name and value token */
     this.attributeValue = '';
-    this.attributeName = ch.toLowerCase();
+    this.attrName = ch;
 };
 
 FastParser.prototype.appendAttributeNameTag = function (ch) {
     /* append to attribute name token */
-    this.attributeName += ch.toLowerCase();
+    this.attrName += ch;
 };
 
 FastParser.prototype.appendAttributeValueTag = function(ch) {
@@ -199,13 +244,35 @@ FastParser.prototype.appendAttributeValueTag = function(ch) {
  * e.g. [A-z] = type 17 (Letter [A-z])</p>
  *
  */
-
-
-
 FastParser.prototype.lookupChar = function(ch) {
     var o = ch.charCodeAt(0);
     if ( o > 122 ) { return 12; }
     return stateMachine.lookupSymbolFromChar[o];
+};
+
+/**
+ * @function FastParser#contextualize
+ */
+FastParser.prototype.contextualize = function(input, endsWithEOF) {
+    var self = this, listeners = self.listeners, i = -1, lastState;
+
+    self.input = input;
+    self.inputLen = input.length;
+
+    while (++i < self.inputLen) {
+        lastState = self.state;
+
+        // TODO: endsWithEOF handling
+        listeners.preWalk && this.emit(listeners.preWalk, [lastState, i, endsWithEOF]);
+
+        // these functions are not supposed to alter the input
+        self.beforeWalk(i, input);
+        self.walk(i, input, endsWithEOF);
+        self.afterWalk(i, input);
+
+        // TODO: endsWithEOF handling
+        listeners.postWalk && this.emit(listeners.postWalk, [lastState, self.state, i, endsWithEOF]);
+    }
 };
 
 /**
@@ -214,51 +281,137 @@ FastParser.prototype.lookupChar = function(ch) {
  * @param {integer} i - the location of the head pointer.
  * @param {string} input - the input stream
  *
- * @return {integer} the new location of the head pointer.
- *
  * @description
  * Interface function for subclass to implement logics before parsing the character.
  *
  */
-FastParser.prototype.beforeWalk = function( i, input ) {
-    return i;
-};
-
+FastParser.prototype.beforeWalk = function (i, input) {};
 /**
  * @function FastParser#afterWalk
  *
- * @param {string} ch - The character consumed.
- * @param {integer} i - the head pointer location of this character
+ * @param {integer} i - the location of the head pointer.
+ * @param {string} input - the input stream
  *
  * @description
  * Interface function for subclass to implement logics after parsing the character.
  *
  */
-FastParser.prototype.afterWalk = function( ch, i ) {
+FastParser.prototype.afterWalk = function (i, input) {};
+
+
+/**
+ * @function FastParser#getStartTagName
+ *
+ * @returns {string} The current handling start tag name
+ *
+ */
+FastParser.prototype.getStartTagName = function() {
+    return this.tags[0].toLowerCase();
+};
+
+/**
+ * @function FastParser#getAttributeName
+ *
+ * @returns {string} The current handling attribute name.
+ *
+ * @description
+ * Get the current handling attribute name of HTML tag.
+ *
+ */
+FastParser.prototype.getAttributeName = function() {
+    return this.attrName.toLowerCase();
+};
+
+/**
+ * @function FastParser#getAttributeValue
+ *
+ * @returns {string} The current handling attribute name's value.
+ *
+ * @description
+ * Get the current handling attribute name's value of HTML tag.
+ *
+ */
+FastParser.prototype.getAttributeValue = function(htmlDecoded) {
+    // TODO: html decode the attribute value
+    return this.attributeValue;
 };
 
 
-function Parser () {
-    FastParser.call(this);
-    this.bytes = [];  /* Save the processed bytes */
-    this.states = [stateMachine.State.STATE_DATA]; /* Save the processed status */
-    this.contexts = [];
-    this.buffer = []; /* Save the processed character into the internal buffer */
-    this.symbols = []; /* Save the processed symbols */
 
+
+
+
+
+
+
+
+
+function Parser (config, listeners) {
+    var self = this, k;
+
+    FastParser.call(self);
+
+    // deep copy config to this.config
+    self.config = {};
+    if (config) {
+        for (k in config) {
+            self.config[k] = config[k];
+        }
+    } else {
+        config = self.config;
+    }
+
+    // deep copy the provided listeners, if any
+    if (typeof listeners === 'object') {
+        for (k in listeners) {
+            self.listeners[k] = listeners[k].slice();
+        }
+        return;
+    }
+
+    // for bookkeeping the processed inputs and states
+    if (!config.disableHistoryTracking) {
+        this.states = [this.state];
+        this.buffer = []; 
+        this.on('postWalk', function (lastState, state, i, endsWithEOF) {
+            this.buffer.push(this.input[i]);
+            this.states.push(state);
+        }).on('reWalk', this.setCurrentState);
+    }
 }
 
 // as in https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/prototype 
 Parser.prototype = Object.create(FastParser.prototype);
-Parser.prototype.constructor = FastParser;
+Parser.prototype.constructor = Parser;
 
-Parser.prototype.walk = function(i, input) {
-    i = FastParser.prototype.walk.call(this, i, input);
-    var ch = input[i];
-    this.bytes[i + 1] = ch;
-    this.states[i + 1] = this.state;
-    this.symbols[i + 1] = this.lookupChar(ch);
-    return i;
+
+
+
+/**
+ * @function Parser#parsePartial
+ *
+ * @param {string} input - The HTML fragment
+ * @returns {string} The processed HTML fragment, which might be altered by preWalk, reWalk or postWalk
+ *
+ * @description
+ * It differs from contextualize() by converting input internally to be an array to facilitate altering
+ */
+Parser.prototype.parsePartial = function(input, endsWithEOF) {
+    input = input.split('');
+    FastParser.prototype.contextualize.call(this, input, endsWithEOF);
+    return input.join('');
+};
+
+/**
+ * @function Parser#contextualize
+ * @param {string} input - the input stream
+ *
+ * @description
+ * It is the same as the original contextualize() except that this method always resets to its initial state before processing
+ */
+Parser.prototype.contextualize = function (input, endsWithEOF) {
+    this.setInitState(this.getInitState());
+    return FastParser.prototype.contextualize.call(this, input, endsWithEOF);
 };
 
 
@@ -273,7 +426,9 @@ Parser.prototype.walk = function(i, input) {
  *
  */
 Parser.prototype.setCurrentState = function(state) {
-    this.state = state;
+    this.states.pop();
+    this.states.push(this.state = state);
+    return this;
 };
 
 /**
@@ -286,7 +441,7 @@ Parser.prototype.setCurrentState = function(state) {
  *
  */
 Parser.prototype.getStates = function() {
-    return this.states;
+    return this.states.slice();
 };
 
 /**
@@ -299,7 +454,8 @@ Parser.prototype.getStates = function() {
  *
  */
 Parser.prototype.setInitState = function(state) {
-    this.states[0] = state;
+    this.states = [state];
+    return this;
 };
 
 /**
@@ -329,41 +485,7 @@ Parser.prototype.getLastState = function() {
     return this.states[ this.states.length - 1 ];
 };
 
-/**
- * @function Parser#getAttributeName
- *
- * @returns {string} The current handling attribute name.
- *
- * @description
- * Get the current handling attribute name of HTML tag.
- *
- */
-Parser.prototype.getAttributeName = function() {
-    return this.attributeName;
-};
 
-/**
- * @function Parser#getAttributeValue
- *
- * @returns {string} The current handling attribute name's value.
- *
- * @description
- * Get the current handling attribute name's value of HTML tag.
- *
- */
-Parser.prototype.getAttributeValue = function() {
-    return this.attributeValue;
-};
-
-/**
- * @function Parser#getStartTagName
- *
- * @returns {string} The current handling start tag name
- *
- */
-Parser.prototype.getStartTagName = function() {
-    return this.tagNames[0];
-};
 
 module.exports = {
     Parser: Parser,
