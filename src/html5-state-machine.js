@@ -181,6 +181,16 @@ StateMachine.lookupReconsumeFromSymbol = [
  [ 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1]
 ];
 
+StateMachine.lookupStateForNullReplacement = [
+//    0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+/*0*/ 0, 0, 0, 1, 0, 1, 1, 1, 0, 0,
+/*1*/ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+/*2*/ 0, 0, 1, 1, 1, 0, 0, 0, 0, 1,
+/*3*/ 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
+/*4*/ 1, 0, 0, 0, 1, 0, 1, 1, 1, 1,
+/*5*/ 1, 1
+];
+
 // key is the "previous" state, key in the value object is "next" state and its value indicates what action we should take. For example, the first line indicates previous state is 1, next state is 1 and return value is 1 (and we'd have logic to add the character to output stream when return value is 1)
 StateMachine.lookupContext = [
   [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
