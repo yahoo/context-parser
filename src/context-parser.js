@@ -398,14 +398,14 @@ function Parser (config, listeners) {
     }
 
     // run through the input stream with input pre-processing
-    this.config.disableInputPreProcessing = (config.disableInputPreProcessing === undefined || config.disableInputPreProcessing)? true:false;
-    this.config.disableInputPreProcessing && this.on('preWalk', InputPreProcessing);
+    this.config.enableInputPreProcessing = (config.enableInputPreProcessing === undefined || config.enableInputPreProcessing)? true:false;
+    this.config.enableInputPreProcessing && this.on('preWalk', InputPreProcessing);
     // fix parse errors before they're encountered in walk()
-    this.config.disableCanonicalization = (config.disableCanonicalization === undefined || config.disableCanonicalization === false)? false:true;
-    this.config.disableCanonicalization && this.on('preWalk', Canonicalize).on('reWalk', Canonicalize);
-    // disable IE conditional comments
-    this.config.disableIEConditionalComments = (config.disableIEConditionalComments === undefined || config.disableIEConditionalComments === false)? false:true;
-    this.config.disableIEConditionalComments && this.on('preWalk', DisableIEConditionalComments);
+    this.config.enableCanonicalization = (config.enableCanonicalization === undefined || config.enableCanonicalization === false)? false:true;
+    this.config.enableCanonicalization && this.on('preWalk', Canonicalize).on('reWalk', Canonicalize);
+    // enable IE conditional comments
+    this.config.enableIEConditionalComments = (config.enableIEConditionalComments === undefined || config.enableIEConditionalComments === false)? false:true;
+    this.config.enableIEConditionalComments && this.on('preWalk', DisableIEConditionalComments);
     // TODO: rewrite IE <comment> tags
     // TODO: When a start tag token is emitted with its self-closing flag set, if the flag is not acknowledged when it is processed by the tree construction stage, that is a parse error.
     // TODO: When an end tag token is emitted with attributes, that is a parse error.
@@ -475,30 +475,23 @@ Parser.prototype.fork = function() {
 };
 
 /**
- * @function Parser#parsePartial
- *
- * @param {string} input - The HTML fragment
- * @returns {string} The processed HTML fragment, which might be altered by preWalk, reWalk or postWalk
- *
- * @description
- * It differs from contextualize() by converting input internally to be an array to facilitate altering
- */
-Parser.prototype.parsePartial = function(input, endsWithEOF) {
-    input = input.split('');
-    FastParser.prototype.contextualize.call(this, input, endsWithEOF);
-    return input.join('');
-};
-
-/**
  * @function Parser#contextualize
  * @param {string} input - the input stream
  *
  * @description
- * It is the same as the original contextualize() except that this method always resets to its initial state before processing
+ * It is the same as the original contextualize() except that this method always resets to its initial state before processing.
+ *
+ * If the Canonicalization is enabled, it converts an input string to be an array to facilitate altering.
  */
 Parser.prototype.contextualize = function (input, endsWithEOF) {
     this.setInitState(this.getInitState());
-    return FastParser.prototype.contextualize.call(this, input, endsWithEOF);
+    if (this.config.enableCanonicalization) { // only Canonicalization will modify the input stream
+        input = input.split('');
+        FastParser.prototype.contextualize.call(this, input, endsWithEOF);
+        return input.join('');
+    } else {
+        return FastParser.prototype.contextualize.call(this, input, endsWithEOF);
+    }
 };
 
 /**

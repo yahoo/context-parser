@@ -14,9 +14,9 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         Parser = require("../../src/context-parser").Parser;
 
     var config = {
-        disableInputPreProcessing: false,
-        disableCanonicalization: false,
-        disableIEConditionalComments: false
+        enableInputPreProcessing: false,
+        enableCanonicalization: false,
+        enableIEConditionalComments: false
     };
 
     describe('HTML5 Context Parser StateMachine', function() {

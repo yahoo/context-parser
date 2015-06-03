@@ -16,9 +16,9 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         FastParser = require("../../src/context-parser").FastParser;
 
     var config = {
-        disableInputPreProcessing: false,
-        disableCanonicalization: false,
-        disableIEConditionalComments: false
+        enableInputPreProcessing: false,
+        enableCanonicalization: false,
+        enableIEConditionalComments: false
     };
 
     describe('HTML5 Context Parser Functions', function() {
