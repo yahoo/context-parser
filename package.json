@@ -29,8 +29,8 @@
     "clean": "grunt clean",
     "test": "grunt test"
   },
-  "dependencies": {},
   "devDependencies": {
+    "chai": "^2.3.0",
     "debug": "^2.*",
     "expect.js": "^0.3.1",
     "grunt": "^0.4.5",

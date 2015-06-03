@@ -15,11 +15,17 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         Parser = require("../../src/context-parser").Parser,
         FastParser = require("../../src/context-parser").FastParser;
 
+    var config = {
+        disableInputPreProcessing: false,
+        disableCanonicalization: false,
+        disableIEConditionalComments: false
+    };
+
     describe('HTML5 Context Parser Functions', function() {
 
         describe('#getStates', function(){
             it('should parse <html></html>', function(){
-                var p1 = new Parser();
+                var p1 = new Parser(config);
                 var html = "<html></html>";
                 p1.contextualize(html);
                 var states = p1.getStates();
@@ -29,14 +35,14 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         describe('#setCurrentState', function(){
             it('should exist)', function(){
-                var p1 = new Parser();
+                var p1 = new Parser(config);
                 p1.setCurrentState(10);
             });
         });
         describe('#setInitState and #getInitState', function(){
 
             it('should exist and set state', function(){
-                var p1 = new Parser();
+                var p1 = new Parser(config);
                 p1.setInitState(10);
                 var state = p1.getInitState();
                 assert.equal(state, 10);
@@ -44,7 +50,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
 
             it('should get state', function(){
-                var p1 = new Parser();
+                var p1 = new Parser(config);
                 var html = "<html></html>";
                 p1.contextualize(html);
                 var state = p1.getInitState();
@@ -55,7 +61,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         describe('#getLastState', function(){
 
             it('should get last state', function(){
-                var p1 = new Parser();
+                var p1 = new Parser(config);
                 var html = "<html></html>";
                 p1.contextualize(html);
                 var state = p1.getLastState();
@@ -67,28 +73,28 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
             var html;
             it('should get attribute name following with quoted attribute value', function(){
-                var p1 = new Parser();
+                var p1 = new Parser(config);
                 html = "<div class='classname'></div>";
                 p1.contextualize(html);
                 assert.equal(p1.getAttributeName(), 'class');
             });
 
             it('should get attribute name following with double quoted attribute value', function(){
-                var p2 = new Parser();
+                var p2 = new Parser(config);
                 html = '<div class="classname"></div>';
                 p2.contextualize(html);
                 assert.equal(p2.getAttributeName(), 'class');
             });
 
             it('should get attribute name following with unquoted attribute value', function(){
-                var p3 = new Parser();
+                var p3 = new Parser(config);
                 html = "<div class=classname></div>";
                 p3.contextualize(html);
                 assert.equal(p3.getAttributeName(), 'class');
             });
 
             it('should get second attribute name', function(){
-                var p1 = new Parser();
+                var p1 = new Parser(config);
                 html = "<div class='classname' style='color:red'></div>";
                 p1.contextualize(html);
                 assert.equal(p1.getAttributeName(), 'style');
@@ -96,7 +102,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
             it('should get second attribute name (double quoted attribute value)', function(){
 
-                var p2 = new Parser();
+                var p2 = new Parser(config);
                 html = "<div class='classname' style=\"color:red\"></div>";
                 p2.contextualize(html);
                 assert.equal(p2.getAttributeName(), 'style');
@@ -104,7 +110,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
             it('should get second attribute name (unquoted attribute value)', function(){
 
-                var p3 = new Parser();
+                var p3 = new Parser(config);
                 html = "<div class='classname' style=color:red></div>";
                 p3.contextualize(html);
                 assert.equal(p3.getAttributeName(), 'style');
@@ -113,19 +119,19 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         describe('#getAttributeValue', function(){
 
             it('should get attribute value (quoted)', function(){
-                var p1 = new Parser();
+                var p1 = new Parser(config);
                 var html = "<div class='classname'></div>";
                 p1.contextualize(html);
                 assert.equal(p1.getAttributeValue(), 'classname');
             });
             it('should get attribute value (double quoted)', function(){
-                var p2 = new Parser();
+                var p2 = new Parser(config);
                 var html = '<div class="classname"></div>';
                 p2.contextualize(html);
                 assert.equal(p2.getAttributeValue(), 'classname');
             });
             it('should get attribute value (unquoted)', function(){
-                var p3 = new Parser();
+                var p3 = new Parser(config);
                 var html = "<div class=classname></div>";
                 p3.contextualize(html);
                 assert.equal(p3.getAttributeValue(), 'classname');
@@ -133,21 +139,21 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
 
             it('should get 2nd attribute value', function(){
-                var p1 = new Parser();
+                var p1 = new Parser(config);
                 var html = "<div class='classname' style='color:red'></div>";
                 p1.contextualize(html);
                 assert.equal(p1.getAttributeValue(), 'color:red');
             });
 
             it('should get 2nd attribute value (double quoted)', function(){
-                var p2 = new Parser();
+                var p2 = new Parser(config);
                 var html = '<div class="classname" style="color:red"></div>';
                 p2.contextualize(html);
                 assert.equal(p2.getAttributeValue(), 'color:red');
             });
 
             it('should get 2nd attribute value (unquoted)', function(){
-                var p3 = new Parser();
+                var p3 = new Parser(config);
                 var html = "<div class=classname style=color:red></div>";
                 p3.contextualize(html);
                 assert.equal(p3.getAttributeValue(), 'color:red');
@@ -156,7 +162,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         describe('#lookupChar', function(){
             it('should match symbol lookup table', function(){
-                var parser = new Parser();
+                var parser = new Parser(config);
                 var r = parser.lookupChar('\t');
                 assert.equal(r, 0);
                 r = parser.lookupChar('\n');
@@ -201,7 +207,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         describe('#getStartTagName', function(){
 
             it('should return start tag name', function(){
-                var p1 = new Parser();
+                var p1 = new Parser(config);
                 var html = "<div class='classname' style='color:red'></div>";
                 p1.contextualize(html);
                 assert.equal(p1.getStartTagName(), 'div');
@@ -216,8 +222,8 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 var p1 = new Object();
                 var p2 = p1;
                 assert.equal(p1, p2);
-                var p1 = new Parser();
-                var p2 = new Parser();
+                var p1 = new Parser(config);
+                var p2 = new Parser(config);
                 if (p1 == p2) {
                     expect(false).to.equal(true);
                 } else {
@@ -230,7 +236,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
     describe('HTML5 Context Fast Parser', function() {
 
         it('should contextualize an open tag should end with open tag state', function(){
-            var fastParser = new FastParser();
+            var fastParser = new FastParser(config);
             var html = "<html> 1 < 2";
             fastParser.contextualize(html);
             expect(fastParser.state, 10)
