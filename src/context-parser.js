@@ -398,7 +398,7 @@ function Parser (config, listeners) {
     }
 
     // run through the input stream with input pre-processing
-    this.config.enableInputPreProcessing = (config.enableInputPreProcessing === undefined || config.enableInputPreProcessing)? true:false;
+    this.config.enableInputPreProcessing = (config.enableInputPreProcessing === undefined || config.enableInputPreProcessing === false)? false:true;
     this.config.enableInputPreProcessing && this.on('preWalk', InputPreProcessing);
     // fix parse errors before they're encountered in walk()
     this.config.enableCanonicalization = (config.enableCanonicalization === undefined || config.enableCanonicalization === false)? false:true;
@@ -485,7 +485,7 @@ Parser.prototype.fork = function() {
  */
 Parser.prototype.contextualize = function (input, endsWithEOF) {
     this.setInitState(this.getInitState());
-    if (this.config.enableCanonicalization) { // only Canonicalization will modify the input stream
+    if (this.config.enableInputPreProcessing || this.config.enableCanonicalization) {
         input = input.split('');
         FastParser.prototype.contextualize.call(this, input, endsWithEOF);
         return input.join('');
