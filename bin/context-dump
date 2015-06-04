@@ -14,24 +14,36 @@ Debug.enable(progname);
     var Parser = require("../src/context-parser").Parser,
         debug = Debug(progname),
         fs = require('fs'),
-        file,
-        noofargs = 0,
-        parser = new Parser();
+        file, 
+        enableInputPreProcessing = false, enableCanonicalization = false, enableIEConditionalComments = false, enableStateTracking = true,
+        noofargs = 0;
 
     process.argv.forEach(function(val, index) {
         ++noofargs;
         if (index === 2) {
             file = val;
+        } else if (index === 3) {
+            enableInputPreProcessing = val === "1"? true:false;
+        } else if (index === 4) {
+            enableCanonicalization = val === "1"? true:false;
         }
     });
+
+    var config = {
+        enableInputPreProcessing: enableInputPreProcessing,
+        enableCanonicalization: enableCanonicalization,
+        enableIEConditionalComments: enableIEConditionalComments,
+        enableStateTracking: enableStateTracking 
+    }, 
+        parser = new Parser(config);
 
     Parser.prototype.printCharWithState = function() {
         var len = this.states.length;
         debug('{ statesSize: '+len+' }');
         for(var i=0;i<len;i++) {
-            var c = this.bytes[i];
+            var c = this.buffer[i];
             var s = this.states[i];
-            var t = this.symbols[i];
+            var t = this.symbol[i];
 
             if (i === 0) {
                 debug('{ ch: 0, state: '+s+', symbol: 0 }');
@@ -49,7 +61,7 @@ Debug.enable(progname);
         return 0;
     };
 
-    if (noofargs === 3) {
+    if (noofargs <= 5) {
         if (fs.existsSync(file)) {
             var data = fs.readFileSync(file, 'utf-8');
             parser.contextualize(data, data.length);            
@@ -60,7 +72,7 @@ Debug.enable(progname);
             process.exit(1);
         }
     } else {
-        console.log("Usage: context-dump <any html file>");
+        console.log("Usage: context-dump <html file> <input preprocessing:0|1> <canonicalization:0|1>");
         process.exit(1);
     }
 

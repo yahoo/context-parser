@@ -416,9 +416,11 @@ function Parser (config, listeners) {
         this.config.enableStateTracking = true;
         this.states = [this.state];
         this.buffer = []; 
+        this.symbol = []; 
         this.on('postWalk', function (lastState, state, i, endsWithEOF) {
             this.buffer.push(this.input[i]);
             this.states.push(state);
+            this.symbol.push(this._getSymbol(i));
         }).on('reWalk', this.setCurrentState);
     }
 }
