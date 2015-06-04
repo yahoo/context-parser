@@ -472,6 +472,7 @@ Parser.prototype.fork = function() {
     if (this.config.enableStateTracking) {
         parser.buffer = this.buffer.slice();
         parser.states = this.states.slice();
+        parser.symbol = this.symbol.slice();
     }
     return parser;
 };
