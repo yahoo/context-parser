@@ -39,7 +39,7 @@ Since we are only interested in analyzing the execution context of the HTML5 pag
 
 Install the npm context-parser from the npm repo.
 ```
-npm install context-parser
+npm install -g context-parser
 ```
 
 ### Server-side (nodejs)
@@ -63,7 +63,7 @@ parser.contextualize(data);
 
 Run against the HTML5 file with our parser and the state defined in [HTML 5 Specification](http://www.w3.org/TR/html5/syntax.html#tokenization) and print out the state of each character.
 ```
-./bin/context-dump <html file>
+./bin/context-dump <html file> <input preprocessing:0|1> <canonicalization:0|1>
   HTML-State { statesSize: 819 } +0ms
   HTML-State { ch: 0, state: 1, symbol: 0 } +1ms
   HTML-State { ch:   [0x20], state: 1, symbol: 0 } +1ms
