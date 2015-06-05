@@ -1,7 +1,14 @@
 HTML5 Context Parser
 ====================
-
 HTML5 Context Parser is a robust and small footprint HTML5 context parser that parses HTML 5 web pages and reports the execution context of each character seen.
+
+[![npm version][npm-badge]][npm]
+[![dependency status][dep-badge]][dep-status]
+
+[npm]: https://www.npmjs.org/package/context-parser
+[npm-badge]: https://img.shields.io/npm/v/context-parser.svg?style=flat-square
+[dep-status]: https://david-dm.org/yahoo/context-parser
+[dep-badge]: https://img.shields.io/david/yahoo/context-parser.svg?style=flat-square
 
 ## Overview
 

@@ -13,6 +13,12 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
     var expect = require("expect.js"),
         fs = require("fs");
 
+    var config = {
+        enableInputPreProcessing: false,
+        enableCanonicalization: false,
+        enableIEConditionalComments: false
+    };
+
     describe('HTML5 Context Parser with Buggy Subclass Prototype', function(){
 
         it('should not print char twice in reconsume logic test', function(){
@@ -27,7 +33,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
                 }
                 this.bytes[i] = ch;
             };
-            var parser = new BuggyParser();
+            var parser = new BuggyParser(config);
             var data = fs.readFileSync(file, 'utf-8');
             parser.contextualize(data);
             o = parser.bytes.join('');
@@ -45,7 +51,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             BuggyParser.prototype.beforeWalk = function( ) {
                 return 1000;
             }
-            var parser = new BuggyParser();
+            var parser = new BuggyParser(config);
             parser.contextualize('<html></html>');
 
         });
@@ -58,7 +64,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             BuggyParser.prototype.walk = function( ) {
                 return 1000;
             }
-            var parser = new BuggyParser();
+            var parser = new BuggyParser(config);
             parser.contextualize('<html></html>');
 
         });
