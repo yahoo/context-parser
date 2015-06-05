@@ -70,19 +70,22 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             assert.equal(states.toString(), '1,8,10,34,35,35,35,35,37,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,34,35,35,35,35,35,1,1,1,1,1,8,9,10,1');
         });
 
-        it('should parse rcdata (extra logic:6)', function(){
+        it('should parse rcdata 1 (extra logic:6)', function(){
             var p1 = new Parser(config);
 
             var html = '<html><title>title</title></html>';
             p1.contextualize(html);
             var states = p1.getStates();
             assert.equal(states.toString(), '1,8,10,10,10,10,1,8,10,10,10,10,10,3,3,3,3,3,3,11,12,13,13,13,13,13,1,8,9,10,10,10,10,1');
+        });
+
+        it('should parse rcdata 2 (extra logic:6)', function(){
+            var p1 = new Parser(config);
 
             var html = '<html><title>title</foo></title></html>';
             p1.contextualize(html);
             var states = p1.getStates();    
             assert.equal(states.toString(), '1,8,10,10,10,10,1,8,10,10,10,10,10,3,3,3,3,3,3,11,12,13,13,3,3,11,12,13,13,13,13,13,1,8,9,10,10,10,10,1');
-
         });
 
         it('should parse rcdata with space end tag (extra logic:6)', function(){
