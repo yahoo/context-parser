@@ -477,7 +477,7 @@ Parser.prototype.fork = function() {
     parser.state = this.state;
     parser.tags = this.tags.slice();
     parser.tagIdx = this.tagIdx;
-    parser.attributeName = this.attributeName;
+    parser.attrName = this.attrName;
     parser.attributeValue = this.attributeValue;
 
     if (this.config.enableStateTracking) {
