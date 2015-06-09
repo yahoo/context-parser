@@ -338,7 +338,7 @@ FastParser.prototype.afterWalk = function (i, input) {};
  *
  */
 FastParser.prototype.getStartTagName = function() {
-    return this.tags[0].toLowerCase();
+    return this.tags[0] !== undefined? this.tags[0].toLowerCase() : undefined;
 };
 
 /**
@@ -360,7 +360,7 @@ FastParser.prototype.getCurrentTagIndex = function() {
  *
  */
 FastParser.prototype.getCurrentTag = function(tagIdx) {
-    return tagIdx === 0 || tagIdx === 1? this.tags[tagIdx].toLowerCase() : undefined;
+    return tagIdx === 0 || tagIdx === 1? (this.tags[tagIdx] !== undefined? this.tags[tagIdx].toLowerCase():undefined) : undefined;
 };
 
 /**
