@@ -1,6 +1,6 @@
 {
   "name": "context-parser",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "homepage": "https://github.com/yahoo/context-parser",
   "description": "HTML5 Context Parser",
   "main": "src/context-parser.js",
