@@ -399,8 +399,6 @@ function Parser (config, listeners) {
     // super constructor
     FastParser.call(self);
 
-    // config
-    config || (config = {});
 
     // deep copy config to this.config
     self.config = {};
@@ -408,9 +406,17 @@ function Parser (config, listeners) {
         for (k in config) {
             self.config[k] = config[k];
         }
-    } else {
-        config = self.config;
     }
+    config = self.config;    
+
+    // config defaulted to false
+    config.enableInputPreProcessing = (config.enableInputPreProcessing === true);
+    config.enableCanonicalization = (config.enableCanonicalization === true);
+    config.enableVoidingIEConditionalComments = (config.enableVoidingIEConditionalComments === true);
+
+    // config defaulted to true
+    config.enableStateTracking = (config.enableStateTracking !== false);
+
 
     // deep copy the provided listeners, if any
     if (typeof listeners === 'object') {
@@ -420,26 +426,23 @@ function Parser (config, listeners) {
         return;
     }
 
+    // ### DO NOT CHANGE THE ORDER OF THE FOLLOWING COMPONENTS ###
     // run through the input stream with input pre-processing
-    this.config.enableInputPreProcessing = (config.enableInputPreProcessing === undefined || config.enableInputPreProcessing === false)? false:true;
-    this.config.enableInputPreProcessing && this.on('preWalk', InputPreProcessing);
+    config.enableInputPreProcessing && this.on('preWalk', InputPreProcessing);
     // fix parse errors before they're encountered in walk()
-    this.config.enableCanonicalization = (config.enableCanonicalization === undefined || config.enableCanonicalization === false)? false:true;
-    this.config.enableCanonicalization && this.on('preWalk', Canonicalize).on('reWalk', Canonicalize);
+    config.enableCanonicalization && this.on('preWalk', Canonicalize).on('reWalk', Canonicalize);
     // enable IE conditional comments
-    this.config.enableIEConditionalComments = (config.enableIEConditionalComments === undefined || config.enableIEConditionalComments === false)? false:true;
-    this.config.enableIEConditionalComments && this.on('preWalk', DisableIEConditionalComments);
+    config.enableVoidingIEConditionalComments && this.on('preWalk', DisableIEConditionalComments);
     // TODO: rewrite IE <comment> tags
     // TODO: When a start tag token is emitted with its self-closing flag set, if the flag is not acknowledged when it is processed by the tree construction stage, that is a parse error.
     // TODO: When an end tag token is emitted with attributes, that is a parse error.
     // TODO: When an end tag token is emitted with its self-closing flag set, that is a parse error.
 
     // for bookkeeping the processed inputs and states
-    if (config.enableStateTracking === undefined || config.enableStateTracking) {
-        this.config.enableStateTracking = true;
+    if (config.enableStateTracking) {
         this.states = [this.state];
-        this.buffer = []; 
-        this.symbol = []; 
+        this.buffer = [];
+        this.symbol = [];
         this.on('postWalk', function (lastState, state, i, endsWithEOF) {
             this.buffer.push(this.input[i]);
             this.states.push(state);
@@ -968,7 +971,7 @@ function DisableIEConditionalComments(state, i){
         // for lazy conversion
         this._convertString2Array();
 
-        this.input.splice(i, 0, ' ');
+        this.input.splice(i + 1, 0, ' ');
         this.inputLen++;
     }
 }
