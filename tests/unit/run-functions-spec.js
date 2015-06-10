@@ -10,7 +10,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 (function () {
 
     require("mocha");
-    var assert = require("assert")
+    var assert = require("assert"),
         expect = require("expect.js"),
         Parser = require("../../src/context-parser").Parser,
         FastParser = require("../../src/context-parser").FastParser;
