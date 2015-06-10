@@ -216,6 +216,26 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
         });
 
+        describe('#getCurrentTagIndex and #getCurrentTag', function(){
+
+            it('should return correct tag name/index', function(){
+
+                [ { html: "<div class='classname' style='color:red'></div>",            tag0: 'div', tag1: 'div', index: 1},
+                  { html: "<div class='classname' style='color:red'></div>         ",   tag0: 'div', tag1: 'div', index: 1},
+                  { html: "<div class='classname' style='color:red'></div><img>",       tag0: 'img', tag1: 'div', index: 0},
+                  { html: "<div class='classname' style='color:red'></div><img   ",     tag0: 'img', tag1: 'div', index: 0},
+                  { html: "<div class='classname' style='color:red'></div><img></im",   tag0: 'img', tag1: 'im',  index: 1},
+                  { html: "<div class='classname' style='color:red'></div><img></img  ",tag0: 'img', tag1: 'img', index: 1},
+                ].forEach(function(testObj) {
+                    var p1 = new Parser(config);
+                    p1.contextualize(testObj.html);
+                    assert.equal(p1.getCurrentTag(0), testObj.tag0);
+                    assert.equal(p1.getCurrentTag(1), testObj.tag1);
+                    assert.equal(p1.getCurrentTagIndex(), testObj.index);
+                });
+            });
+        });
+
         describe('#Constructor', function(){
 
             it('should support multiple instances', function(){

@@ -332,12 +332,35 @@ FastParser.prototype.afterWalk = function (i, input) {};
 
 /**
  * @function FastParser#getStartTagName
+ * @depreciated Replace it by getCurrentTagIndex and getCurrentTag
  *
  * @returns {string} The current handling start tag name
  *
  */
 FastParser.prototype.getStartTagName = function() {
-    return this.tags[0].toLowerCase();
+    return this.tags[0] !== undefined? this.tags[0].toLowerCase() : undefined;
+};
+
+/**
+ * @function FastParser#getCurrentTagIndex
+ *
+ * @returns {integer} The current handling tag Idx
+ *
+ */
+FastParser.prototype.getCurrentTagIndex = function() {
+    return this.tagIdx;
+};
+
+/**
+ * @function FastParser#getCurrentTag
+ *
+ * @params {integer} The tag Idx
+ *
+ * @returns {string} The current tag name indexed by tag Idx
+ *
+ */
+FastParser.prototype.getCurrentTag = function(tagIdx) {
+    return tagIdx === 0 || tagIdx === 1? (this.tags[tagIdx] !== undefined? this.tags[tagIdx].toLowerCase():undefined) : undefined;
 };
 
 /**
