@@ -15,7 +15,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         enableCanonicalization: true,
         enableIEConditionalComments: true
     };
-    var expect = require('chai').expect,
+    var expect = require("expect.js"),
         ContextParser = require("../../src/context-parser.js").Parser,
         contextParser = new ContextParser(config);
 
