@@ -12,23 +12,37 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 "use strict";
 
 var stateMachine = require('./html5-state-machine.js'),
-    htmlState = stateMachine.State;
+    htmlState = stateMachine.State,
+    reInputPreProcessing = /(?:\r\n?|[\x01-\x08\x0B\x0E-\x1F\x7F-\x9F\uFDD0-\uFDEF\uFFFE\uFFFF]|[\uD83F\uD87F\uD8BF\uD8FF\uD93F\uD97F\uD9BF\uD9FF\uDA3F\uDA3F\uDA7F\uDABF\uDAFF\uDB3F\uDB7F\uDBBF\uDBFF][\uDFFE\uDFFF])/g;
 
 /**
  * @class FastParser
  * @constructor FastParser
  */
-function FastParser() {
+function FastParser(config) {
+    var self = this, k;
 
-    this.listeners = {};
+    // deep copy config to this.config
+    self.config = {};
+    if (config) {
+        for (k in config) {
+            self.config[k] = config[k];
+        }
+    }
+    config = self.config;   
 
-    this.state = stateMachine.State.STATE_DATA;  /* Save the current status */
-    this.tags = ['', '']; /* Save the current tag name */
-    this.tagIdx = 0;
-    this.attrName = ''; /* Save the current attribute name */
-    this.attributeValue = ''; /* Save the current attribute value */
-    this.input = '';
-    this.inputLen = 0;
+    // config enabled by default - no conversion needed
+    // config.enableInputPreProcessing = (config.enableInputPreProcessing !== false);
+
+    self.listeners = {};
+
+    self.state = stateMachine.State.STATE_DATA;  /* Save the current status */
+    self.tags = ['', '']; /* Save the current tag name */
+    self.tagIdx = 0;
+    self.attrName = ''; /* Save the current attribute name */
+    self.attributeValue = ''; /* Save the current attribute value */
+    self.input = '';
+    self.inputLen = 0;
 }
 
 /**
@@ -287,8 +301,10 @@ FastParser.prototype.lookupChar = function(ch) {
 FastParser.prototype.contextualize = function(input, endsWithEOF) {
     var self = this, listeners = self.listeners, i = -1, lastState;
 
-    self.input = input;
-    self.inputLen = input.length;
+    // Perform input stream preprocessing
+    // Reference: https://html.spec.whatwg.org/multipage/syntax.html#preprocessing-the-input-stream
+    self.input = self.config.enableInputPreProcessing ? input.replace(reInputPreProcessing, function(m){return m[0] === '\r' ? '\n' : '\uFFFD';}) : input;
+    self.inputLen = self.input.length;
 
     while (++i < self.inputLen) {
         lastState = self.state;
@@ -397,20 +413,11 @@ function Parser (config, listeners) {
     var self = this, k;
 
     // super constructor
-    FastParser.call(self);
+    FastParser.call(self, config);
 
-
-    // deep copy config to this.config
-    self.config = {};
-    if (config) {
-        for (k in config) {
-            self.config[k] = config[k];
-        }
-    }
-    config = self.config;    
+    config = self.config; 
 
     // config defaulted to false
-    config.enableInputPreProcessing = (config.enableInputPreProcessing === true);
     config.enableCanonicalization = (config.enableCanonicalization === true);
     config.enableVoidingIEConditionalComments = (config.enableVoidingIEConditionalComments === true);
 
@@ -427,8 +434,6 @@ function Parser (config, listeners) {
     }
 
     // ### DO NOT CHANGE THE ORDER OF THE FOLLOWING COMPONENTS ###
-    // run through the input stream with input pre-processing
-    config.enableInputPreProcessing && this.on('preWalk', InputPreProcessing);
     // fix parse errors before they're encountered in walk()
     config.enableCanonicalization && this.on('preWalk', Canonicalize).on('reWalk', Canonicalize);
     // enable IE conditional comments
@@ -623,58 +628,12 @@ Parser.prototype.getLastState = function() {
 /**
 * The implementation of Strict Context Parser functions
 * 
-* - InputPreProcessing
 * - ConvertBogusCommentToComment
 * - PreCanonicalizeConvertBogusCommentEndTag
 * - Canonicalize
 * - DisableIEConditionalComments
 *
 */
-
-// Perform input stream preprocessing
-// Reference: https://html.spec.whatwg.org/multipage/syntax.html#preprocessing-the-input-stream
-function InputPreProcessing (state, i) {
-    var chr = this.input[i],
-        nextChr = this.input[i+1];
-
-    // equivalent to inputStr.replace(/\r\n?/g, '\n')
-    if (chr === '\r') {
-        // for lazy conversion
-        this._convertString2Array();
-        if (nextChr === '\n') {
-            this.input.splice(i, 1);
-            this.inputLen--;
-        } else {
-            this.input[i] = '\n';
-        }
-    }
-    // the following are control characters or permanently undefined Unicode characters (noncharacters), resulting in parse errors
-    // \uFFFD replacement is not required by the specification, we consider \uFFFD character as an inert character
-    else if ((chr >= '\x01'   && chr <= '\x08') ||
-             (chr >= '\x0E'   && chr <= '\x1F') ||
-             (chr >= '\x7F'   && chr <= '\x9F') ||
-             (chr >= '\uFDD0' && chr <= '\uFDEF') ||
-             chr === '\x0B' || chr === '\uFFFE' || chr === '\uFFFF') {
-        // for lazy conversion
-        this._convertString2Array();
-        this.input[i] = '\uFFFD';
-    }
-    // U+1FFFE, U+1FFFF, U+2FFFE, U+2FFFF, U+3FFFE, U+3FFFF,
-    // U+4FFFE, U+4FFFF, U+5FFFE, U+5FFFF, U+6FFFE, U+6FFFF,
-    // U+7FFFE, U+7FFFF, U+8FFFE, U+8FFFF, U+9FFFE, U+9FFFF,
-    // U+AFFFE, U+AFFFF, U+BFFFE, U+BFFFF, U+CFFFE, U+CFFFF,
-    // U+DFFFE, U+DFFFF, U+EFFFE, U+EFFFF, U+FFFFE, U+FFFFF,
-    // U+10FFFE, and U+10FFFF
-    else if ((nextChr === '\uDFFE' || nextChr === '\uDFFF') &&
-             (  chr === '\uD83F' || chr === '\uD87F' || chr === '\uD8BF' || chr === '\uD8FF' ||
-                chr === '\uD93F' || chr === '\uD97F' || chr === '\uD9BF' || chr === '\uD9FF' ||
-                chr === '\uDA3F' || chr === '\uDA7F' || chr === '\uDABF' || chr === '\uDAFF' ||
-                chr === '\uDB3F' || chr === '\uDB7F' || chr === '\uDBBF' || chr === '\uDBFF')) {
-        // for lazy conversion
-        this._convertString2Array();
-        this.input[i] = this.input[i+1] = '\uFFFD';
-    }
-}
 
 function ConvertBogusCommentToComment(i) {
     // for lazy conversion

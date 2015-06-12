@@ -28,8 +28,8 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
             expect(contextParser.contextualize('\x0B')).to.equal('\uFFFD');
         });
         it('unicode non-character U+1FFFF and U+1FFFE treatment', function () {
-            expect(contextParser.contextualize('\uD83F\uDFFE')).to.equal('\uFFFD\uFFFD');  //U+1FFFE
-            expect(contextParser.contextualize('\uD83F\uDFFF')).to.equal('\uFFFD\uFFFD');  //U+1FFFF
+            expect(contextParser.contextualize('\uD83F\uDFFE')).to.equal('\uFFFD');  //U+1FFFE
+            expect(contextParser.contextualize('\uD83F\uDFFF')).to.equal('\uFFFD');  //U+1FFFF
         });
     });
 
