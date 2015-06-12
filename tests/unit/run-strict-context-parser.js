@@ -13,7 +13,7 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
     var config = {
         enableInputPreProcessing: true,
         enableCanonicalization: true,
-        enableIEConditionalComments: true
+        enableVoidingIEConditionalComments: true
     };
     var expect = require("expect.js"),
         ContextParser = require("../../src/context-parser.js").Parser,
@@ -30,6 +30,14 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
         it('unicode non-character U+1FFFF and U+1FFFE treatment', function () {
             expect(contextParser.contextualize('\uD83F\uDFFE')).to.equal('\uFFFD\uFFFD');  //U+1FFFE
             expect(contextParser.contextualize('\uD83F\uDFFF')).to.equal('\uFFFD\uFFFD');  //U+1FFFF
+        });
+    });
+
+    describe('Voiding IE Conditional Comments Test', function(){
+        it('<!--[if lt IE 9]> treatment', function () {
+            var a = '<!--[if lt IE 9]><script src="javascripts/html5shiv.min.js"></script><![endif]-->',
+                b = '<!--[if lt IE 9] ><script src="javascripts/html5shiv.min.js"></script><![endif]-->';
+            expect(contextParser.contextualize(a)).to.equal(b);
         });
     });
 
