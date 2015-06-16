@@ -1,5 +1,6 @@
 language: node_js
 node_js:
+- '0.12'
 - '0.11'
 - '0.10'
 notifications:
@@ -15,7 +16,7 @@ deploy:
   provider: npm
   email: neraliu@yahoo-inc.com
   api_key:
-    secure: LlhF8dO3Plt023CjeQRumw9ZgBNsE2KWanHrRY/SnMoFxWgcVYEbzX3Ze5CtoRvtm8CH+3z71L11BaL52GN0qm+0zX93h4JXTYETloEzX2pdJpiBXATzEKcscLC5bfsarh2I/UlkSPQP2b+mkAi3RJu/rjF4CBjbpwka90aF1k0=
+    secure: bDXKqWnIbB3i29FHZp0RDDIL7AUBbldSOwWQ+05yCZNuWeAEJWxFy/RquHOIlFl2g01XrUjUElvkgLDZz2YbQmwDoendAsTG/RNlXgopL3MaK0a0tsHFNfXJsTblhqvqp9Rckh8cLD9CDKqKY4th+kpYXX3iDfj1RVJSbsRePIQ
   on:
     condition: $VALID_VERSION = true
     tags: true
