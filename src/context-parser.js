@@ -40,7 +40,7 @@ function FastParser(config) {
     self.tags = ['', '']; /* Save the current tag name */
     self.tagIdx = 0;
     self.attrName = ''; /* Save the current attribute name */
-    self.attributeValue = ''; /* Save the current attribute value */
+    self.attributeValue = null; /* Save the current attribute value */
     self.input = '';
     self.inputLen = 0;
 }
@@ -265,7 +265,7 @@ FastParser.prototype.processTagName = function (ch) {
 
 FastParser.prototype.createAttributeNameAndValueTag = function (ch) {
     /* new attribute name and value token */
-    this.attributeValue = '';
+    this.attributeValue = null;
     this.attrName = ch;
 };
 
@@ -275,7 +275,7 @@ FastParser.prototype.appendAttributeNameTag = function (ch) {
 };
 
 FastParser.prototype.appendAttributeValueTag = function(ch) {
-    this.attributeValue += ch;   
+    this.attributeValue = this.attributeValue === null ? ch : this.attributeValue + ch;
 };
 
 /**
