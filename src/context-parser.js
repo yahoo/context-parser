@@ -35,6 +35,17 @@ function FastParser(config) {
     // config.enableInputPreProcessing = (config.enableInputPreProcessing !== false);
 
     self.listeners = {};
+    self.reset();
+}
+
+/**
+ * @function FastParser#reset
+ *
+ * @description
+ * Reset all internal states, as if being created with the new operator
+ */
+ FastParser.prototype.reset = function () {
+    var self = this;
 
     self.state = stateMachine.State.STATE_DATA;  /* Save the current status */
     self.tags = ['', '']; /* Save the current tag name */
@@ -43,7 +54,9 @@ function FastParser(config) {
     self.attributeValue = ''; /* Save the current attribute value */
     self.input = '';
     self.inputLen = 0;
-}
+
+    return self;
+ };
 
 /**
  * @function FastParser#on
@@ -297,6 +310,8 @@ FastParser.prototype.lookupChar = function(ch) {
 
 /**
  * @function FastParser#contextualize
+ *
+ * @param {string} input - the input stream
  */
 FastParser.prototype.contextualize = function(input, endsWithEOF) {
     var self = this, listeners = self.listeners, i = -1, lastState;
@@ -412,10 +427,7 @@ FastParser.prototype.getAttributeValue = function(htmlDecoded) {
 function Parser (config, listeners) {
     var self = this, k;
 
-    // super constructor
-    FastParser.call(self, config);
-
-    config = self.config; 
+    config = config || {};
 
     // config defaulted to false
     config.enableCanonicalization = (config.enableCanonicalization === true);
@@ -424,6 +436,8 @@ function Parser (config, listeners) {
     // config defaulted to true
     config.enableStateTracking = (config.enableStateTracking !== false);
 
+    // super constructor, reset() is called here
+    FastParser.call(self, config);
 
     // deep copy the provided listeners, if any
     if (typeof listeners === 'object') {
@@ -435,9 +449,9 @@ function Parser (config, listeners) {
 
     // ### DO NOT CHANGE THE ORDER OF THE FOLLOWING COMPONENTS ###
     // fix parse errors before they're encountered in walk()
-    config.enableCanonicalization && this.on('preWalk', Canonicalize).on('reWalk', Canonicalize);
+    config.enableCanonicalization && self.on('preWalk', Canonicalize).on('reWalk', Canonicalize);
     // enable IE conditional comments
-    config.enableVoidingIEConditionalComments && this.on('preWalk', DisableIEConditionalComments);
+    config.enableVoidingIEConditionalComments && self.on('preWalk', DisableIEConditionalComments);
     // TODO: rewrite IE <comment> tags
     // TODO: When a start tag token is emitted with its self-closing flag set, if the flag is not acknowledged when it is processed by the tree construction stage, that is a parse error.
     // TODO: When an end tag token is emitted with attributes, that is a parse error.
@@ -445,20 +459,43 @@ function Parser (config, listeners) {
 
     // for bookkeeping the processed inputs and states
     if (config.enableStateTracking) {
-        this.states = [this.state];
-        this.buffer = [];
-        this.symbol = [];
-        this.on('postWalk', function (lastState, state, i, endsWithEOF) {
+        self.on('postWalk', function (lastState, state, i, endsWithEOF) {
             this.buffer.push(this.input[i]);
             this.states.push(state);
             this.symbol.push(this._getSymbol(i));
-        }).on('reWalk', this.setCurrentState);
+        }).on('reWalk', self.setCurrentState);
     }
 }
 
 // as in https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/prototype 
 Parser.prototype = Object.create(FastParser.prototype);
 Parser.prototype.constructor = Parser;
+
+
+
+/**
+ * @function Parser#reset
+ *
+ * @description
+ * Reset all internal states, as if being created with the new operator
+ */
+Parser.prototype.reset = function () {
+    var self = this;
+
+    FastParser.prototype.reset.call(self);
+
+    if (self.config.enableStateTracking) {
+        self.states = [this.state];
+        self.buffer = [];
+        self.symbol = [];
+    }
+
+    // delete any pending corrections (e.g., to close bogus comment)
+    delete self.listeners.preCanonicalize;
+
+    return self;
+};
+
 
 /**
 * @function Parser._getSymbol
