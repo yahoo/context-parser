@@ -200,6 +200,7 @@ FastParser.prototype.walk = function(i, input, endsWithEOF) {
 FastParser.prototype.createStartTag = function (ch) {
     this.tagIdx = 0;
     this.tags[0] = ch;
+    this.tags[1] = '';
 };
 
 FastParser.prototype.createEndTag = function (ch) {
@@ -225,8 +226,20 @@ FastParser.prototype.matchEndTagWithStartTag = function (symbol) {
         GREATER-THAN SIGN (>): If the current end tag token is an appropriate end tag token, then switch to the data state and emit the current tag token.
                 Otherwise, treat it as per the 'anything else' entry below.
         */
+
+        /* 
+        The reason we reset tags[0] (start tag) is that there is no trivial way to reset RCDATA/RAWTEXT/SCRIPT state to DATA state.
+        By setting tags[0] = '', we would expect processTagName() to transit the state back the DATA state
+        
+        The actual logic is described in https://html.spec.whatwg.org/multipage/syntax.html#tree-construction, 
+        "As each token is emitted from the tokenizer, the user agent must follow the appropriate steps..."
+
+        That implies state transition happens when a start or end tag token is emitted. 
+        We captured all of those with state 11 (Switch state based on tag name).
+
+         */
+
         this.tags[0] = '';
-        this.tags[1] = '';
 
         switch (symbol) {
             case stateMachine.Symbol.SPACE: /** Whitespaces */
