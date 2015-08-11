@@ -181,6 +181,14 @@ FastParser.prototype.walk = function(i, input, endsWithEOF) {
             if(this.tags[0].toLowerCase() === this.tags[1].toLowerCase()) {
                 reconsume = 0;  /* see 12.2.4.13 - switch state for the following case, otherwise, reconsume. */
                 this.matchEndTagWithStartTag(symbol);
+                /* 
+                  After matchEndTagWithStartTag (with start tag name == end tag name), 
+                  the state will be transition back to DATA. 
+                  
+                  Thus we need to reset the start tag variable (tags[0]) back to nil.
+                 */
+
+                this.tags[0] = "";
             }
             break;
         case 8:  this.matchEscapedScriptTag(ch); break;
@@ -201,6 +209,7 @@ FastParser.prototype.walk = function(i, input, endsWithEOF) {
 FastParser.prototype.createStartTag = function (ch) {
     this.tagIdx = 0;
     this.tags[0] = ch;
+    this.tags[1] = '';
 };
 
 FastParser.prototype.createEndTag = function (ch) {
@@ -226,8 +235,6 @@ FastParser.prototype.matchEndTagWithStartTag = function (symbol) {
         GREATER-THAN SIGN (>): If the current end tag token is an appropriate end tag token, then switch to the data state and emit the current tag token.
                 Otherwise, treat it as per the 'anything else' entry below.
         */
-        this.tags[0] = '';
-        this.tags[1] = '';
 
         switch (symbol) {
             case stateMachine.Symbol.SPACE: /** Whitespaces */

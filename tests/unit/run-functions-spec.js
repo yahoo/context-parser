@@ -222,8 +222,8 @@ Authors: Nera Liu <neraliu@yahoo-inc.com>
 
                 [ { html: "<div class='classname' style='color:red'></div>",            tag0: 'div', tag1: 'div', index: 1},
                   { html: "<div class='classname' style='color:red'></div>         ",   tag0: 'div', tag1: 'div', index: 1},
-                  { html: "<div class='classname' style='color:red'></div><img>",       tag0: 'img', tag1: 'div', index: 0},
-                  { html: "<div class='classname' style='color:red'></div><img   ",     tag0: 'img', tag1: 'div', index: 0},
+                  { html: "<div class='classname' style='color:red'></div><img>",       tag0: 'img', tag1: '', index: 0},
+                  { html: "<div class='classname' style='color:red'></div><img   ",     tag0: 'img', tag1: '', index: 0},
                   { html: "<div class='classname' style='color:red'></div><img></im",   tag0: 'img', tag1: 'im',  index: 1},
                   { html: "<div class='classname' style='color:red'></div><img></img  ",tag0: 'img', tag1: 'img', index: 1},
                 ].forEach(function(testObj) {
