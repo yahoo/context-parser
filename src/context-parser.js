@@ -40,14 +40,15 @@ function FastParser(config) {
 
 /**
  * @function FastParser#reset
+ * @param {integer} initState (optional) - set the initial state, if it is not stateMachine.State.STATE_DATA
  *
  * @description
  * Reset all internal states, as if being created with the new operator
  */
- FastParser.prototype.reset = function () {
+ FastParser.prototype.reset = function (initState) {
     var self = this;
 
-    self.state = stateMachine.State.STATE_DATA;  /* Save the current status */
+    self.state = initState || stateMachine.State.STATE_DATA;  /* Save the current status */
     self.tags = ['', '']; /* Save the current tag name */
     self.tagIdx = 0;
     self.attrName = ''; /* Save the current attribute name */
@@ -475,14 +476,15 @@ Parser.prototype.constructor = Parser;
 
 /**
  * @function Parser#reset
+ * @param {integer} initState (optional) - set the initial state, if it is not stateMachine.State.STATE_DATA
  *
  * @description
  * Reset all internal states, as if being created with the new operator
  */
-Parser.prototype.reset = function () {
+Parser.prototype.reset = function (initState) {
     var self = this;
 
-    FastParser.prototype.reset.call(self);
+    FastParser.prototype.reset.call(self, initState);
 
     if (self.config.enableStateTracking) {
         self.states = [this.state];
@@ -590,8 +592,11 @@ Parser.prototype.getModifiedInput = function() {
  *
  */
 Parser.prototype.setCurrentState = function(state) {
-    this.states.pop();
-    this.states.push(this.state = state);
+    this.state = state;
+    if (this.config.enableStateTracking) {
+        this.states.pop();
+        this.states.push(state);
+    }
     return this;
 };
 
@@ -611,55 +616,52 @@ Parser.prototype.getCurrentState = function() {
 /**
  * @function Parser#getStates
  *
- * @returns {Array} An array of states.
+ * @returns {Array} An array of states, or undefined if enableStateTracking is off
  *
  * @description
  * Get the states of the HTML5 page
  *
  */
 Parser.prototype.getStates = function() {
-    return this.states.slice();
+    return this.states && this.states.slice();
 };
 
 /**
  * @function Parser#setInitState
+ * @alias Parser#reset
  *
  * @param {integer} state - The initial state of the HTML5 Context Parser.
  *
  * @description
- * Set the init state of HTML5 Context Parser.
+ * Set the init state of HTML5 Context Parser. Once this is called, any existing states will be reset, in order to make use of the init state for processing.
  *
  */
-Parser.prototype.setInitState = function(state) {
-    this.states = [state];
-    return this;
-};
+Parser.prototype.setInitState = Parser.prototype.reset;
 
 /**
  * @function Parser#getInitState
  *
- * @returns {integer} The initial state of the HTML5 Context Parser.
+ * @returns {integer} The initial state of the HTML5 Context Parser, or undefined if enableStateTracking is off
  *
  * @description
  * Get the init state of HTML5 Context Parser.
  *
  */
 Parser.prototype.getInitState = function() {
-    return this.states[0];
+    return this.states && this.states[0];
 };
 
 /**
  * @function Parser#getLastState
  *
- * @returns {integer} The last state of the HTML5 Context Parser.
+ * @returns {integer} The last state of the HTML5 Context Parser, or undefined if enableStateTracking is off
  *
  * @description
  * Get the last state of HTML5 Context Parser.
  *
  */
 Parser.prototype.getLastState = function() {
-    // * undefined if length = 0 
-    return this.states[ this.states.length - 1 ];
+    return this.states && this.states[ this.states.length - 1 ];
 };
 
 /**
