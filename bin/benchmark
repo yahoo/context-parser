@@ -20,10 +20,17 @@ var allParsers = parsers.concat([
     ['HtmlParser2', 'htmlparser2', 'Parser', 'end'],
 ]);
 
-console.log("Usage: benchmark [all]");
+var selfParsers = [
+    ['Context Parser (FastParser)', '../src/context-parser', 'FastParser', 'contextualize', {}],
+    ['Context Parser (Parser)', '../src/context-parser', 'Parser', 'contextualize', {}],
+    ['Context Parser (Parser,stateTracking=Off)', '../src/context-parser', 'Parser', 'contextualize', {enableStateTracking: false}],
+    ['Context Parser (Parser,stateTracking=Off,canonicalization=On)', '../src/context-parser', 'Parser', 'contextualize', {enableStateTracking: false, enableCanonicalization: true}]
+];
+
+console.log("Usage: benchmark [all|self]");
 
 if ( process.argv.length > 2 ) {
-    parsers = allParsers;
+    parsers = process.argv[3] === 'all' ? allParsers : selfParsers;
 }
 
 parsers.forEach(function(parser) {
@@ -33,13 +40,14 @@ parsers.forEach(function(parser) {
     var classname = parser[1];
     var name = parser[2];
     var method = parser[3];
+    var config = parser[4];
 
     try {
         if ( name || method ) {
             var Parser = name ? require(classname)[name] : require(classname);
             start = +new Date();
             for(var i=0; i<10; i++) {
-                var parser = new Parser();
+                var parser = config ? new Parser(config) : new Parser();
                 parser[method](html);
             }
             end = +new Date();
