@@ -524,14 +524,18 @@ Parser.prototype._getNextState = function (state, i, endsWithEOF) {
 };
 
 /**
-* @function Parser._convertString2Array
+* @function Parser._inputSplice
+* @param {integer} start - Index at which to start changing the this.input
+* @param {integer} deleteCount - An integer indicating the number of characters to remove from this.input
+* @param {string} addChars - A string to insert into the this.input
 *
 * @description
-* Convert the immutable this.input to array type for Strict Context Parser processing (lazy conversion).
-*
+* This provides a similar splice interface to act on this.input as if it's an array. In addition, it updates the new length to this.inputLen
 */
-Parser.prototype._convertString2Array = function () {
-    if (typeof this.input === "string") this.input = this.input.split('');
+Parser.prototype._inputSplice = function(start, deleteCount, addChars) {
+    var str = this.input;
+    this.input = str.substr(0, start) + addChars + str.substr(start + deleteCount);
+    this.inputLen += addChars.length - deleteCount;
 };
 
 /**
@@ -567,20 +571,9 @@ Parser.prototype.fork = function() {
  */
 Parser.prototype.contextualize = function (input, endsWithEOF) {
     FastParser.prototype.contextualize.call(this, input, endsWithEOF);
-    return this.getModifiedInput();
+    return this.input;
 };
 
-/**
- * @function Parser#getModifiedInput
- *
- * @description
- * Get the modified input due to Strict Context Parser processing.
- *
- */
-Parser.prototype.getModifiedInput = function() {
-    // TODO: it is not defensive enough, should use Array.isArray, but need polyfill
-    return (typeof this.input === "string")? this.input:this.input.join('');
-};
 
 /**
  * @function Parser#setCurrentState
@@ -675,12 +668,8 @@ Parser.prototype.getLastState = function() {
 */
 
 function ConvertBogusCommentToComment(i) {
-    // for lazy conversion
-    this._convertString2Array();
-
     // convert !--. i.e., from <* to <!--*
-    this.input.splice(i, 0, '!', '-', '-');
-    this.inputLen += 3;
+    this._inputSplice(i, 0, '!--');
 
     // convert the next > to -->
     this.on('preCanonicalize', PreCanonicalizeConvertBogusCommentEndTag);
@@ -691,12 +680,8 @@ function PreCanonicalizeConvertBogusCommentEndTag(state, i, endsWithEOF) {
         // remove itself from the listener list
         this.off('preCanonicalize', PreCanonicalizeConvertBogusCommentEndTag);
 
-        // for lazy conversion
-        this._convertString2Array();
-
         // convert [>] to [-]->
-        this.input.splice(i, 0, '-', '-');
-        this.inputLen += 2;
+        this._inputSplice(i, 0, '--');
 
         this.emit(this.listeners.bogusCommentCoverted, [state, i, endsWithEOF]);
     }
@@ -730,44 +715,34 @@ function Canonicalize(state, i, endsWithEOF) {
     // batch replacement of NULL with \uFFFD would violate the spec
     //  - for example, NULL is untouched in CDATA section state
     if (chr === '\x00' && statesRequiringNullReplacement[state]) {
-        // for lazy conversion
-        this._convertString2Array();
-        this.input[i] = '\uFFFD';
+        this._inputSplice(i, 1, '\uFFFD');
     }
     // encode < into &lt; for [<]* (* is non-alpha) in STATE_DATA, [<]% and [<]! in STATE_RCDATA and STATE_RAWTEXT
     else if ((potentialState === htmlState.STATE_TAG_OPEN && nextPotentialState === htmlState.STATE_DATA) ||  // [<]*, where * is non-alpha
              ((state === htmlState.STATE_RCDATA || state === htmlState.STATE_RAWTEXT) &&                            // in STATE_RCDATA and STATE_RAWTEXT
             chr === '<' && (nextChr === '%' || nextChr === '!'))) {   // [<]% or [<]!
-        // for lazy conversion
-        this._convertString2Array();
-
         // [<]*, [<]%, [<]!
-        this.input.splice(i, 1, '&', 'l', 't', ';');
-        this.inputLen += 3;
+        this._inputSplice(i, 1, '&lt;');
     }
     // enforce <!doctype html>
     // + convert bogus comment or unknown doctype to the standard html comment
     else if (potentialState === htmlState.STATE_MARKUP_DECLARATION_OPEN) {            // <[!]***
         reCanonicalizeNeeded = false;
 
-        // for lazy conversion
-        this._convertString2Array();
-
         // context-parser treats the doctype and [CDATA[ as resulting into STATE_BOGUS_COMMENT
         // so, we need our algorithm here to extract and check the next 7 characters
-        var commentKey = this.input.slice(i + 1, i + 8).join('');
+        var commentKey = this.input.slice(i + 1, i + 8);
 
         // enforce <!doctype html>
         if (commentKey.toLowerCase() === 'doctype') {               // <![d]octype
             // extract 6 chars immediately after <![d]octype and check if it's equal to ' html>'
-            if (this.input.slice(i + 8, i + 14).join('').toLowerCase() !== ' html>') {
+            if (this.input.slice(i + 8, i + 14).toLowerCase() !== ' html>') {
 
                 // replace <[!]doctype xxxx> with <[!]--!doctype xxxx--><doctype html>
                 ConvertBogusCommentToComment.call(this, i);
 
                 this.once('bogusCommentCoverted', function (state, i) {
-                    [].splice.apply(this.input, [i + 3, 0].concat('<!doctype html>'.split('')));
-                    this.inputLen += 15;
+                    this._inputSplice(i + 3, 0, '<!doctype html>');
                 });
 
                 reCanonicalizeNeeded = true;
@@ -809,10 +784,7 @@ function Canonicalize(state, i, endsWithEOF) {
         //     htmlState.STATE_BEFORE_ATTRIBUTE_NAME,                                 // <a [/]* replaced with <a [ ]*
         //     htmlState.STATE_AFTER_ATTRIBUTE_VALUE_QUOTED].indexOf(state) !== -1)   // <a abc=""[/]* replaced with <a abc=""[ ]*
    
-        // for lazy conversion
-        this._convertString2Array();
-
-        this.input[i] = ' ';
+        this._inputSplice(i, 1, ' ');
 
         // given this.input[i] was    '/', nextPotentialState was htmlState.STATE_BEFORE_ATTRIBUTE_NAME
         // given this.input[i] is now ' ', nextPotentialState becomes STATE_BEFORE_ATTRIBUTE_NAME if current state is STATE_ATTRIBUTE_NAME or STATE_AFTER_ATTRIBUTE_NAME
@@ -821,29 +793,20 @@ function Canonicalize(state, i, endsWithEOF) {
         if (state === htmlState.STATE_ATTRIBUTE_NAME ||                               // <a abc[/]=abc  replaced with <a abc[ ]*
                 state === htmlState.STATE_AFTER_ATTRIBUTE_NAME) {                     // <a abc [/]=abc replaced with <a abc [ ]*
             for (var j = i + 1; j < this.inputLen && this.input[j] === '='; j++) {
-                this.input.splice(j, 1);
-                this.inputLen--;
+                this._inputSplice(j, 1, '');
             }
         }
     }
     // remove unnecessary equal signs, hence <input checked[=]> become <input checked[>], or <input checked [=]> become <input checked [>]
     else if (potentialState === htmlState.STATE_BEFORE_ATTRIBUTE_VALUE &&   // only from STATE_ATTRIBUTE_NAME or STATE_AFTER_ATTRIBUTE_NAME
             nextPotentialState === htmlState.STATE_DATA) {                  // <a abc[=]> or <a abc [=]>
-        // for lazy conversion
-        this._convertString2Array();
-
-        this.input.splice(i, 1);
-        this.inputLen--;
+        this._inputSplice(i, 1, '');
     }
     // insert a space for <a abc="***["]* or <a abc='***[']* after quoted attribute value (i.e., <a abc="***["] * or <a abc='***['] *)
     else if (potentialState === htmlState.STATE_AFTER_ATTRIBUTE_VALUE_QUOTED &&        // <a abc=""[*] where * is not SPACE (\t,\n,\f,' ')
             nextPotentialState === htmlState.STATE_BEFORE_ATTRIBUTE_NAME &&
             this._getSymbol(i + 1) !== stateMachine.Symbol.SPACE) {
-        // for lazy conversion
-        this._convertString2Array();
-
-        this.input.splice(i + 1, 0, ' ');
-        this.inputLen++;
+        this._inputSplice(i + 1, 0, ' ');
     }
     // else here means no special pattern was found requiring rewriting
     else {
@@ -854,11 +817,7 @@ function Canonicalize(state, i, endsWithEOF) {
     switch (potentialState) {
         case htmlState.STATE_BEFORE_ATTRIBUTE_NAME:     // remove ambigious symbols in <a [*]href where * is ", ', <, or =
             if (nextChr === "=") {
-                // for lazy conversion
-                this._convertString2Array();
-
-                this.input.splice(i + 1, 1);
-                this.inputLen--;
+                this._inputSplice(i + 1, 1, '');
                 reCanonicalizeNeeded = true;
                 break;
             }
@@ -866,11 +825,7 @@ function Canonicalize(state, i, endsWithEOF) {
         case htmlState.STATE_ATTRIBUTE_NAME:            // remove ambigious symbols in <a href[*] where * is ", ', or <
         case htmlState.STATE_AFTER_ATTRIBUTE_NAME:      // remove ambigious symbols in <a href [*] where * is ", ', or <
             if (nextChr === '"' || nextChr === "'" || nextChr === '<') {
-                // for lazy conversion
-                this._convertString2Array();
-
-                this.input.splice(i + 1, 1);
-                this.inputLen--;
+                this._inputSplice(i + 1, 1, '');
                 reCanonicalizeNeeded = true;
             }
             break;
@@ -884,40 +839,20 @@ function Canonicalize(state, i, endsWithEOF) {
     // escape " ' < = ` to avoid raising parse errors for unquoted value
         case htmlState.STATE_ATTRIBUTE_VALUE_UNQUOTED:
             if (chr === '"') {
-                // for lazy conversion
-                this._convertString2Array();
-
-                this.input.splice(i, 1, '&', 'q', 'u', 'o', 't', ';');
-                this.inputLen += 5;
+                this._inputSplice(i, 1, '&quot;');
                 break;
             } else if (chr === "'") {
-                // for lazy conversion
-                this._convertString2Array();
-
-                this.input.splice(i, 1, '&', '#', '3', '9', ';');
-                this.inputLen += 4;
+                this._inputSplice(i, 1, '&#39;');
                 break;
             }
             /* falls through */
         case htmlState.STATE_BEFORE_ATTRIBUTE_VALUE:     // treat < = ` as if they are in STATE_ATTRIBUTE_VALUE_UNQUOTED
             if (chr === '<') {
-                // for lazy conversion
-                this._convertString2Array();
-
-                this.input.splice(i, 1, '&', 'l', 't', ';');
-                this.inputLen += 3;
+                this._inputSplice(i, 1, '&lt;');
             } else if (chr === '=') {
-                // for lazy conversion
-                this._convertString2Array();
-
-                this.input.splice(i, 1, '&', '#', '6', '1', ';');
-                this.inputLen += 4;
+                this._inputSplice(i, 1, '&#61;');
             } else if (chr === '`') {
-                // for lazy conversion
-                this._convertString2Array();
-
-                this.input.splice(i, 1, '&', '#', '9', '6', ';');
-                this.inputLen += 4;
+                this._inputSplice(i, 1, '&#96;');
             }
             break;
 
@@ -925,33 +860,21 @@ function Canonicalize(state, i, endsWithEOF) {
         // replace <!--[>] with <!--[-]->
         case htmlState.STATE_COMMENT_START:
             if (chr === '>') {                          // <!--[>]
-                // for lazy conversion
-                this._convertString2Array();
-
-                this.input.splice(i, 0, '-', '-');
-                this.inputLen += 2;
+                this._inputSplice(i, 0, '--');
                 // reCanonicalizeNeeded = true;  // not need due to no where to treat its potential states
             }
             break;
         // replace <!---[>] with <!---[-]>
         case htmlState.STATE_COMMENT_START_DASH:
             if (chr === '>') {                          // <!---[>]
-                // for lazy conversion
-                this._convertString2Array();
-
-                this.input.splice(i, 0, '-');
-                this.inputLen++;
+                this._inputSplice(i, 0, '-');
                 // reCanonicalizeNeeded = true;  // not need due to no where to treat its potential states
             }
             break;
     // replace --[!]> with --[>]
         case htmlState.STATE_COMMENT_END:
             if (chr === '!' && nextChr === '>') {
-                // for lazy conversion
-                this._convertString2Array();
-
-                this.input.splice(i, 1);
-                this.inputLen--;
+                this._inputSplice(i, 1, '');
                 // reCanonicalizeNeeded = true;  // not need due to no where to treat its potential states
             }
             // if (chr === '-'), ignored this parse error. TODO: consider stripping n-2 hyphens for ------>
@@ -966,11 +889,7 @@ function Canonicalize(state, i, endsWithEOF) {
 // remove IE conditional comments
 function DisableIEConditionalComments(state, i){
     if (state === htmlState.STATE_COMMENT && this.input[i] === ']' && this.input[i+1] === '>') {
-        // for lazy conversion
-        this._convertString2Array();
-
-        this.input.splice(i + 1, 0, ' ');
-        this.inputLen++;
+        this._inputSplice(i + 1, 0, ' ');
     }
 }
 
