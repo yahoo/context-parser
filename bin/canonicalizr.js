@@ -15,8 +15,8 @@ if (process.argv.length !== 3) {
 
 var html = fs.readFileSync(process.argv[2], "utf8");  
 var c = new Canonicalizr({
-	enableCanonicalization: false,
-	enableVoidingIEConditionalComments: false,
+	enableCanonicalization: true,
+	enableVoidingIEConditionalComments: true,
 	enableStateTracking: false
 });
 
