@@ -974,6 +974,117 @@ function DisableIEConditionalComments(state, i){
     }
 }
 
+
+
+
+// <iframe srcdoc=""> is a scriptable attribute too
+// Reference: https://html.spec.whatwg.org/multipage/embedded-content.html#attr-iframe-srcdoc
+var scriptableTags = {
+    script:1,style:1,
+    svg:1,xml:1,math:1,
+    applet:1,object:1,embed:1,link:1,
+    scriptlet:1                  // IE-specific
+};
+
+/**
+ * @function Parser#isScriptableTag
+ *
+ * @returns {boolean} true if the current tag can possibly incur script either through configuring its attribute name or inner HTML
+ *
+ * @description
+ * Check if the current tag can possibly incur script either through configuring its attribute name or inner HTML
+ *
+ */
+Parser.prototype.isScriptableTag = function() {
+    return scriptableTags[this.getStartTagName()] === 1;
+};
+
+
+
+// Reference: http://www.w3.org/TR/html-markup/elements.html
+Parser.ATTRTYPE_GENERAL = 0;
+Parser.ATTRTYPE_URI = 1;
+Parser.ATTRTYPE_CSS = 2;
+Parser.ATTRTYPE_EVENT = 3;
+Parser.ATTRTYPE_MIME = 4;
+
+
+/**
+ * @function Parser#getAttributeType
+ *
+ * @returns {integer} the attribute type defined for different handling (Paser.ATTRTYPE_GENERAL | Paser.ATTRTYPE_URI | Paser.ATTRTYPE_CSS | Paser.ATTRTYPE_EVENT | Paser.ATTRTYPE_MIME)
+ *
+ * @description
+ * Check if the current tag can possibly incur script either through configuring its attribute name or inner HTML
+ *
+ */
+Parser.prototype.getAttributeType = function() {
+
+    var attrName = this.getAttributeName(), 
+        startTagName = this.getStartTagName();
+
+
+    /* assuming it is from Strict Context Parser.
+         and o{{placeholder}}n* can bypass the check.
+         anyway, we are good to throw error in atttribute name state. 
+         note: CP has lowerCase the attributeName */
+    if (attrName[0] === 'o' && attrName[1] === 'n') { 
+        return this.ATTRTYPE_EVENT;
+    }
+
+    // TODO: support compound uri context at <meta http-equiv="refresh" content="seconds; url">, <img srcset="url 1.5x, url 2x">
+
+
+    // we generally do not differentiate whether these attribtues are tag specific during matching for simplicity
+    switch (attrName) {
+        case 'href':            // for a, link, img, area, iframe, frame, video, object, embed ...
+        case 'src':             // for img, iframe, frame, etc
+        case 'background':      // for body, table, tbody, tr, td, th, etc? (obsolete)
+        case 'action':          // for form, input, button
+        case 'formaction':
+        case 'cite':            // for blockquote, del, ins, q
+        case 'poster':          // for img, object, video, source
+        case 'usemap':          // for image
+        case 'longdesc':  
+        case 'folder':          // for a
+        case 'manifest':        // for html
+        case 'classid':         // for object
+        case 'codebase':        // for object, applet
+        case 'icon':            // for command
+        case 'profile':         // for head
+        // TODO: we allow content before we implement the stack in CP for tracking attributeName
+        // case 'content':         // for meta http-equiv=refresh
+
+        // http://www.w3.org/TR/xmlbase/#syntax
+        case 'xmlns':           // for svg, etc?
+        case 'xml:base':  
+        case 'xmlns:xlink':
+        case 'xlink:href':      // for xml-related
+
+        // srcdoc is the STRING type, not URI
+        case 'srcdoc':          // for iframe
+
+            return this.ATTRTYPE_URI;
+
+        case 'style':
+            return this.ATTRTYPE_CSS;     // for global attributes list
+
+
+        // TODO: any potential loophole for the MIME type?
+        case 'type':
+            return this.ATTRTYPE_MIME;
+
+        // tag-specific matching
+        case 'data':
+            return startTagName === 'object' ? this.ATTRTYPE_URI : this.ATTRTYPE_GENERAL;
+        case 'rel':
+            return startTagName === 'link' ? this.ATTRTYPE_URI : this.ATTRTYPE_GENERAL;
+        case 'value':
+            return startTagName === 'param' ? this.ATTRTYPE_URI : this.ATTRTYPE_GENERAL;
+    }
+    return this.ATTRTYPE_GENERAL;
+};
+
 module.exports = {
     Parser: Parser,
     FastParser: FastParser,
